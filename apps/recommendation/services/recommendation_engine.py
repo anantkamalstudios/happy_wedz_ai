@@ -1,8 +1,7 @@
-from datetime import datetime, timedelta
-from collections import defaultdict
-from services.cache import venues_cache, vendors_cache, user_interaction_cache
-from services.weights import RecommendationWeights
-from models.user import User
+from datetime import datetime
+from apps.recommendation.services.cache import venues_cache, vendors_cache, user_interaction_cache
+from apps.recommendation.services.weights import RecommendationWeights
+from apps.recommendation.models.user import User
 
 class HybridRecommendationEngine:
     """Main hybrid recommendation engine"""

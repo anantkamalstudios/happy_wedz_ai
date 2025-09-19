@@ -2,7 +2,7 @@ import pandas as pd
 from collections import defaultdict
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine
-from services.vendor_categories import VendorCategories
+from apps.recommendation.services.vendor_categories import VendorCategories
 
 # DB connection
 from config import DB_URL

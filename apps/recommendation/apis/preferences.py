@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
-from services.cache import user_interaction_cache
-from services.recommendation_engine import UserPreferenceRecommender
+from apps.recommendation.services.cache import user_interaction_cache
+from apps.recommendation.services.recommendation_engine import UserPreferenceRecommender
 
 preferences_bp = Blueprint("preferences", __name__)
 

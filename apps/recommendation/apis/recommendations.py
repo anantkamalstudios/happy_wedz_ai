@@ -2,10 +2,10 @@ from flask import Blueprint, jsonify
 from datetime import datetime
 from collections import Counter, defaultdict
 
-from models.user import User
-from services.recommendation_engine import HybridRecommendationEngine, get_fallback_recommendations
-from services.vendor_categories import VendorCategories
-from services.cache import user_interaction_cache
+from apps.recommendation.models.user import User
+from apps.recommendation.services.recommendation_engine import HybridRecommendationEngine, get_fallback_recommendations
+from apps.recommendation.services.vendor_categories import VendorCategories
+from apps.recommendation.services.cache import user_interaction_cache
 
 recommendations_bp = Blueprint("recommendations", __name__)
 

@@ -1,9 +1,9 @@
 from flask import Blueprint, jsonify
 from datetime import datetime, timedelta
 from collections import defaultdict
-from models.interaction import UserInteraction
-from services.cache import venues_cache, vendors_cache
-from services.weights import RecommendationWeights
+from apps.recommendation.models.interaction import UserInteraction
+from apps.recommendation.services.cache import venues_cache, vendors_cache
+from apps.recommendation.services.weights import RecommendationWeights
 
 trending_bp = Blueprint("trending", __name__)
 

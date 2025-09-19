@@ -1,12 +1,12 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 from db import db
-from models.interaction import UserInteraction
+from apps.recommendation.models.interaction import UserInteraction
 
 interactions_bp = Blueprint("interactions", __name__)
 
 # In-memory cache (imported from services later)
-from services.cache import user_interaction_cache
+from apps.recommendation.services.cache import user_interaction_cache
 
 @interactions_bp.route("/interact", methods=["POST"])
 def interact():
