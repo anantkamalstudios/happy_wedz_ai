@@ -30,7 +30,7 @@ class ProductDetailedEnum(enum.Enum):
     BLUSH = "Blush" 
     EYESHADOW = "EyeShadow" 
     CONTACTLENSES = "ContactLenses" 
-    PRIMER = "Primer"  
+    # PRIMER = "Primer"  
     FOUNDATION = "Foundation" 
     CONCEALER = "concealer" 
     CONTOUR = "Contour" 

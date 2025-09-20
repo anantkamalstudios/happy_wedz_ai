@@ -6,7 +6,7 @@ from apps.image_processing.models.makeup_image_model import (
     db, UserImage, ImageType, CategoryEnum, Product, UserMakeupResultImage, ProductDetailedEnum
 )
 from apps.image_processing.core.makeup_image_core import (
-    allowed_file, count_people, is_real_photo_strict, is_blurry, contains_person, is_full_body_front_facing, apply_lipstick, apply_blush, apply_eyeshadow, apply_contact_lenses, apply_primer, apply_foundation, apply_mascara, apply_eyeliner, apply_kajal, apply_concealer, apply_contour
+    allowed_file, count_people, is_real_photo_strict, is_blurry, contains_person, is_full_body_front_facing, apply_lipstick, apply_blush, apply_eyeshadow, apply_contact_lenses, apply_foundation, apply_mascara, apply_kajal, apply_concealer, apply_contour
 )
 from ultralytics import YOLO
 import mediapipe as mp
@@ -170,7 +170,7 @@ def apply_makeup_api():
         radius = int(payload.get(f"{feature}_radius", 50))
         thickness = int(payload.get(f"{feature}_thickness", 25))
         radius_scale = float(payload.get(f"{feature}_radius_scale", 1.0))
-
+        # breakpoint()
         hex_color = product.product_color_hex
 
         if feature == "lipstick":
@@ -181,22 +181,20 @@ def apply_makeup_api():
             result = apply_eyeshadow(result, landmarks, hex_color, intensity, thickness)
         elif feature in ["lenses", "contactlenses"]:
             result = apply_contact_lenses(result, lens_color=hex_color, lens_intensity=intensity, lens_radius_scale=radius_scale)
-        elif feature == "primer":
-            result = apply_primer(result, landmarks, hex_color, intensity)
+        # elif feature == "primer":
+        #     result = apply_primer(result, landmarks, hex_color, intensity)
         elif feature == "foundation":
             result = apply_foundation(result, landmarks, hex_color, intensity)
         elif feature == "mascara":
             result = apply_mascara(result, landmarks, intensity=1.0)
-        elif feature == "eyeliner":
-            result = apply_eyeliner(result, landmarks, intensity=1.0)
         elif feature == "kajal":
-            result == apply_kajal(result, landmarks, intensity=1.0)
+            result = apply_kajal(result, kajal_color_hex=hex_color, intensity=intensity)
         elif feature == "concealer":
             h, w = result.shape[:2]
-            result = apply_concealer(result, lm=landmarks, hw=(h, w))
+            result = apply_concealer(result, intensity=intensity, color_hex=hex_color)
         elif feature == "contour":
             h, w = result.shape[:2]
-            result = apply_contour(result, lm=landmarks, hw=(h, w))
+            result = apply_contour(result, intensity=intensity, color_hex=hex_color)
 
         user_makeup_entry = UserMakeupResultImage(
             result_image_id=image_id,

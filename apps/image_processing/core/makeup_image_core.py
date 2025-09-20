@@ -21,6 +21,7 @@ from transformers import SegformerImageProcessor, SegformerForSemanticSegmentati
 import tempfile
 import os
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
+import math
 
 
 # --------------------------Upload Image Validation Functions-----------------------
@@ -867,7 +868,54 @@ def get_face_mask(image_bgr, close_kernel=15, debug=False):
     return final
 
 
-def apply_primer(image, landmarks, hex_color=None, intensity=0.5):
+# def apply_primer(image, landmarks, hex_color=None, intensity=0.5):
+#     result = image.copy()
+
+#     mask = get_face_mask(image)
+#     if mask is None or mask.sum() == 0:
+#         return result
+
+#     smooth = cv2.bilateralFilter(result, d=15, sigmaColor=80, sigmaSpace=80)
+
+#     alpha = np.clip(intensity, 0.0, 1.0)
+#     primer_applied = cv2.addWeighted(smooth, alpha, result, 1 - alpha, 0)
+#     result[mask == 255] = primer_applied[mask == 255]
+
+#     if intensity > 0:
+#         glow = cv2.convertScaleAbs(result, alpha=1.02, beta=int(10 * intensity))
+#         result[mask == 255] = glow[mask == 255]
+
+#     return result
+
+
+# def apply_foundation(image, landmarks, hex_color="#f5d6c6", intensity=0.6):
+    # result = image.copy()
+    # mask = get_face_mask(image)
+    # if mask is None or mask.sum() == 0:
+    #     return result
+
+    # mask = cv2.GaussianBlur(mask, (25, 25), 15)
+
+    # smooth = cv2.bilateralFilter(result, d=20, sigmaColor=90, sigmaSpace=90)
+
+    # hex_color = hex_color.lstrip("#")
+    # r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    # foundation_color = np.full_like(result, (b, g, r))
+
+    # alpha = np.clip(intensity, 0.0, 1.0)
+    # toned = cv2.addWeighted(smooth, 1 - alpha, foundation_color, alpha, 0)
+
+    # details = cv2.subtract(result, cv2.GaussianBlur(result, (21, 21), 10))
+    # toned = cv2.addWeighted(toned, 1.0, details, 0.3, 0)
+
+    # mask_norm = mask.astype(float) / 255.0
+    # for c in range(3):
+    #     result[..., c] = (result[..., c] * (1 - mask_norm) +
+    #                       toned[..., c] * mask_norm)
+
+    # return result
+
+def apply_foundation(image, landmarks, hex_color="#f5d6c6", intensity=0.6):
     result = image.copy()
 
     mask = get_face_mask(image)
@@ -885,35 +933,6 @@ def apply_primer(image, landmarks, hex_color=None, intensity=0.5):
         result[mask == 255] = glow[mask == 255]
 
     return result
-
-
-def apply_foundation(image, landmarks, hex_color="#f5d6c6", intensity=0.6):
-    result = image.copy()
-    mask = get_face_mask(image)
-    if mask is None or mask.sum() == 0:
-        return result
-
-    mask = cv2.GaussianBlur(mask, (25, 25), 15)
-
-    smooth = cv2.bilateralFilter(result, d=20, sigmaColor=90, sigmaSpace=90)
-
-    hex_color = hex_color.lstrip("#")
-    r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-    foundation_color = np.full_like(result, (b, g, r))
-
-    alpha = np.clip(intensity, 0.0, 1.0)
-    toned = cv2.addWeighted(smooth, 1 - alpha, foundation_color, alpha, 0)
-
-    details = cv2.subtract(result, cv2.GaussianBlur(result, (21, 21), 10))
-    toned = cv2.addWeighted(toned, 1.0, details, 0.3, 0)
-
-    mask_norm = mask.astype(float) / 255.0
-    for c in range(3):
-        result[..., c] = (result[..., c] * (1 - mask_norm) +
-                          toned[..., c] * mask_norm)
-
-    return result
-
 
 
 def apply_mascara(image, landmarks, intensity=0.65, density=0.7,
@@ -1021,54 +1040,59 @@ def apply_mascara(image, landmarks, intensity=0.65, density=0.7,
     return img
 
 
-def apply_eyeliner(image, landmarks, intensity=1.0):
-    pass
+LEFT_EYE = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246]
+RIGHT_EYE = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398]
+
+def apply_kajal(image, kajal_color_hex="#000000", intensity=3):
+    hex_color = kajal_color_hex.lstrip("#")
+    try:
+        rgb = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    except:
+        rgb = (0, 0, 0)
+    kajal_color_bgr = rgb[::-1]
+
+    h, w = image.shape[:2]
+    result_image = image.copy()
+
+    # Use MediaPipe FaceMesh
+    with mp_face_mesh.FaceMesh(
+        static_image_mode=True,
+        max_num_faces=1,
+        refine_landmarks=True,
+        min_detection_confidence=0.5
+    ) as face_mesh:
+        image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        results = face_mesh.process(image_bgr)
+
+        if not results.multi_face_landmarks:
+            print("No face detected")
+            return image
+
+        face_landmarks = results.multi_face_landmarks[0]
+        landmarks = []
+        for lm in face_landmarks.landmark:
+            x = int(lm.x * w)
+            y = int(lm.y * h)
+            landmarks.append([x, y])
+
+        # Draw kajal on both eyes
+        for eye_indices in [LEFT_EYE, RIGHT_EYE]:
+            eye_points = np.array([landmarks[i] for i in eye_indices], dtype=np.int32)
+            thickness = max(1, int(round(intensity * 2)))
+            cv2.polylines(result_image, [eye_points], True, kajal_color_bgr, thickness, lineType=cv2.LINE_AA)
+
+            # Optional subtle fill
+            if thickness > 2:
+                mask = np.zeros((h, w), dtype=np.uint8)
+                cv2.polylines(mask, [eye_points], True, 255, max(1, thickness-1), lineType=cv2.LINE_AA)
+                alpha = 0.1
+                for c in range(3):
+                    ch = result_image[:, :, c].astype(np.float32)
+                    ch = ch * (1 - mask.astype(np.float32)/255.0 * alpha) + mask.astype(np.float32)/255.0 * alpha * kajal_color_bgr[c]
+                    result_image[:, :, c] = np.clip(ch, 0, 255).astype(np.uint8)
+
+    return result_image
     
-
-def apply_kajal(image, landmarks, intensity=1.0):
-    if image is None:
-        return image
-
-    overlay = image.copy()
-    alpha_mask = np.zeros(image.shape[:2], dtype=np.float32)
-
-    eyeliner_color = np.array([20, 20, 20], dtype=np.uint8)
-
-    for eye_key in ["left_eye", "right_eye"]:
-        if eye_key not in landmarks or len(landmarks[eye_key]) < 6:
-            continue
-
-        points = np.array(landmarks[eye_key], dtype=np.int32)
-
-        outer_corner = points[0] 
-        inner_corner = points[3] 
-
-        upper_points = points[[0, 1, 2, 3]]  
-        lower_points = points[[3, 4, 5, 0]]  
-
-        thickness = max(1, int(1.5 * intensity))
-        cv2.polylines(alpha_mask, [upper_points], isClosed=False, color=1.0,
-                      thickness=thickness, lineType=cv2.LINE_AA)
-
-        cv2.polylines(alpha_mask, [lower_points], isClosed=False, color=1.0,
-                      thickness=thickness, lineType=cv2.LINE_AA)
-
-    kernel = np.ones((3, 3), np.uint8)
-    alpha_mask = cv2.dilate(alpha_mask.astype(np.uint8), kernel, iterations=1).astype(np.float32)
-
-    alpha_mask = cv2.GaussianBlur(alpha_mask, (5, 5), 0)
-
-    alpha_mask = np.clip(alpha_mask * intensity, 0, 1)
-
-    color_overlay = np.zeros_like(image, dtype=np.uint8)
-    color_overlay[:, :] = eyeliner_color
-
-    blended = image.copy().astype(np.float32)
-    for c in range(3):
-        blended[:, :, c] = (1 - alpha_mask) * blended[:, :, c] + alpha_mask * color_overlay[:, :, c]
-
-    return blended.astype(np.uint8)
-
 
 def alpha_blend(base_bgr, overlay_bgr, mask_uint8):
     mask = (mask_uint8.astype(np.float32) / 255.0)[..., None]
@@ -1138,6 +1162,96 @@ def apply_under_eye_crescent(img, lm, left_idx_inner, left_idx_outer,
     return alpha_blend(img, overlay, mask_soft)
 
 
+# def safe_lm(lm, idx):
+#     if isinstance(lm, dict):
+#         return lm.get(idx, None)
+#     elif isinstance(lm, (list, tuple)):
+#         if 0 <= idx < len(lm):
+#             return lm[idx]
+#     return None
+
+
+def hex_to_rgb(hex_color):
+    hex_color = hex_color.lstrip("#")
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+
+def apply_concealer(img_bgr, intensity=0.8, color_hex="#FFDBAC"):
+    blur_radius=16
+
+    # ✅ Convert HEX → RGB for PIL
+    color = tuple(int(color_hex.lstrip("#")[i:i+2], 16) for i in (0, 2, 4))
+
+    # ✅ Get image dimensions
+    h, w = img_bgr.shape[:2]
+
+    # ✅ Mediapipe face landmarks
+    mp_face = mp.solutions.face_mesh
+    with mp_face.FaceMesh(static_image_mode=True, max_num_faces=1,
+                          refine_landmarks=True, min_detection_confidence=0.5) as face_mesh:
+        rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(rgb)
+        if not results.multi_face_landmarks:
+            return img_bgr  # no face detected
+        lm = results.multi_face_landmarks[0].landmark
+
+    # --- Convert to PIL for drawing ---
+    img_pil = Image.fromarray(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
+
+    # ✅ Helper: soft round patch
+    def apply_patch(img, center, radius=20):
+        mask = Image.new("L", img.size, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse([center[0]-radius, center[1]-radius,
+              center[0]+radius, center[1]+radius], fill=255)
+
+        # ✅ Blur only the mask, NOT the full image
+        if blur_radius > 0:
+            mask = mask.filter(ImageFilter.GaussianBlur(blur_radius))
+
+        patch = Image.new("RGB", img.size, color)
+        patch = Image.blend(img, patch, alpha=intensity)
+        return Image.composite(patch, img, mask)
+
+    # ✅ Helper: under-eye crescent
+    def apply_under_eye(img, h, w):
+        mask = Image.new("L", img.size, 0)
+        draw = ImageDraw.Draw(mask)
+
+        def draw_crescent(inner, outer):
+            x_inner = int(inner.x * w); y_inner = int(inner.y * h)
+            x_outer = int(outer.x * w); y_outer = int(outer.y * h)
+            cx = (x_inner + x_outer) // 2
+            cy = max(y_inner, y_outer) + int(0.085 * h) - int(0.18 * h)
+            half_width = int(abs(x_outer - x_inner) * 0.6 + 0.05 * w * 0.5)
+            half_height = int(0.085 * h)
+            draw.ellipse([cx-half_width, cy,
+                          cx+half_width, cy+half_height*2], fill=255)
+            offset_h = int(half_height * 0.6)
+            draw.ellipse([cx-half_width, cy-offset_h,
+                          cx+half_width, cy+half_height*2-offset_h], fill=0)
+
+        draw_crescent(lm[133], lm[33])     # left eye
+        draw_crescent(lm[362], lm[263])    # right eye
+
+        # ✅ Blur only the crescent mask
+        if blur_radius > 0:
+            mask = mask.filter(ImageFilter.GaussianBlur(blur_radius))
+
+        patch = Image.new("RGB", img.size, color)
+        patch = Image.blend(img, patch, alpha=intensity)
+        return Image.composite(patch, img, mask)
+
+    # ✅ Apply patches (you can adjust positions/radii as needed)
+    img_pil = apply_patch(img_pil, (int(w*0.5), int(h*0.27)), radius=22)             # forehead
+    img_pil = apply_under_eye(img_pil, h, w)                                        # under eyes
+    img_pil = apply_patch(img_pil, (int(lm[1].x*w),  int(lm[1].y*h)-int(0.035*h)), radius=16)  # nose bridge
+    img_pil = apply_patch(img_pil, (int(lm[152].x*w), int(lm[152].y*h)-int(0.03*h)), radius=20) # chin
+
+
+    # ✅ Back to BGR for OpenCV
+    return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
+
 def safe_lm(lm, idx):
     if isinstance(lm, dict):
         return lm.get(idx, None)
@@ -1147,129 +1261,148 @@ def safe_lm(lm, idx):
     return None
 
 
-def apply_concealer(img_bgr, lm, hw):
-    h, w = hw
-    out = img_bgr.copy()
-
-    color = (180, 200, 230)
-    feather = 8.0
-    opacity = 0.7
-
-    fx = int(w * 0.5)
-    fy = int(h * 0.27)
-    out = apply_concealer_patch(out, (fx, fy), radius=22,
-                                intensity=opacity, color=color, feather_sigma=feather)
-
-    out = apply_under_eye_crescent(
-        out, lm,
-        left_idx_inner=133, left_idx_outer=33,
-        right_idx_inner=362, right_idx_outer=263,
-        hw=hw,
-        width_ratio=0.05, height_ratio=0.085,
-        intensity=opacity, color=color, feather_sigma=feather
-    )
-
-    nose = safe_lm(lm, 1)
-    if nose is not None:
-        nx = int(nose.x * w)
-        ny = int(nose.y * h) - int(0.035 * h)
-        out = apply_concealer_patch(out, (nx, ny), radius=16,
-                                    intensity=opacity, color=color, feather_sigma=feather)
-
-    chin = safe_lm(lm, 152)
-    if chin is not None:
-        cx = int(chin.x * w)
-        cy = int(chin.y * h) - int(0.03 * h)
-        out = apply_concealer_patch(out, (cx, cy), radius=20,
-                                    intensity=opacity, color=color, feather_sigma=feather)
-
-    return out
-
-
-
-def safe_lm(lm, idx):
-    if isinstance(lm, dict):
-        return lm.get(idx, None)
-    elif isinstance(lm, (list, tuple)):
-        if 0 <= idx < len(lm):
-            return lm[idx]
-    return None
-
-
-def apply_contour(img_bgr, lm, hw):
-    h, w = hw
+def apply_contour(img_bgr, intensity=0.2, color_hex="#644632"):
+    blur_radius=12
+    # Convert HEX → RGB
+    base_color = tuple(int(color_hex.lstrip("#")[i:i+2], 16) for i in (0, 2, 4))
+    
+    # Convert to PIL
     img = Image.fromarray(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
     img_rgba = img.convert("RGBA")
-
-    eyebrow_center = safe_lm(lm, 9)
-    nose_tip = safe_lm(lm, 1)
-    nose_left = safe_lm(lm, 98)
-    nose_right = safe_lm(lm, 327)
-
-    if not all([eyebrow_center, nose_tip, nose_left, nose_right]):
-        return img_bgr
-
+    
+    # Face landmarks
+    mp_face_mesh = mp.solutions.face_mesh
+    with mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1) as face_mesh:
+        rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(rgb)
+        if not results.multi_face_landmarks:
+            return img_bgr
+        lm = results.multi_face_landmarks[0].landmark
+    
+    h, w = img_bgr.shape[:2]
+    
+    # --- Nose contour + forehead bands ---
+    eyebrow_center = lm[9]
+    nose_tip = lm[1]
+    nose_left = lm[98]
+    nose_right = lm[327]
+    
     y_top = int(eyebrow_center.y * h)
     y_bottom = int(nose_tip.y * h)
-
     x_center = int(nose_tip.x * w)
     x_left = int(nose_left.x * w)
     x_right = int(nose_right.x * w)
-
+    
     nose_width = x_right - x_left
     line_offset = max(3, int(nose_width * 0.2))
     line_width = max(5, int(nose_width * 0.25))
-
+    
+    # Adjust height
     height_scale = 0.6
     mid = (y_top + y_bottom) // 2
     y_top_new = int(mid - (y_bottom - y_top) * height_scale / 2)
     y_bottom_new = int(mid + (y_bottom - y_top) * height_scale / 2)
     y_bottom_new += int((y_bottom - y_top) * 0.15)
-
-    base_color = (100, 70, 50)
-    intensity = 0.2
-    blur_radius = 7
-
+    
     mask = Image.new("L", img.size, 0)
     mask_draw = ImageDraw.Draw(mask)
+    
+    # Nose lines
     mask_draw.line([(x_center - line_offset, y_top_new), (x_center - line_offset, y_bottom_new)],
                    fill=255, width=line_width)
     mask_draw.line([(x_center + line_offset, y_top_new), (x_center + line_offset, y_bottom_new)],
                    fill=255, width=line_width)
-
     radius = int(line_offset * 1.4)
-    bbox = [x_center - radius, y_bottom_new - radius,
-            x_center + radius, y_bottom_new + radius]
+    bbox = [x_center - radius, y_bottom_new - radius, x_center + radius, y_bottom_new + radius]
     mask_draw.arc(bbox, start=0, end=180, fill=255, width=line_width)
-
+    
+    # Forehead bands
     forehead_y = int(eyebrow_center.y * h) - int(h * 0.10)
-    forehead_band_width = int(nose_width * 3.2)
+    forehead_band_width = int(nose_width * 0.9)
     forehead_band_height = int(nose_width * 0.7)
     gap_between_bands = int(nose_width * 0.6)
     tilt_angle = -30
-
+    
     def draw_band(x_start, tilt):
         band_mask = Image.new("L", img.size, 0)
         band_draw = ImageDraw.Draw(band_mask)
         band_box = [(x_start, forehead_y),
                     (x_start + forehead_band_width, forehead_y + forehead_band_height)]
         band_draw.rounded_rectangle(band_box, radius=forehead_band_height//2, fill=255)
-        return band_mask.rotate(tilt,
-                                center=(x_start + forehead_band_width//2, forehead_y),
-                                fillcolor=0)
-
+        return band_mask.rotate(tilt, center=(x_start + forehead_band_width//2, forehead_y), fillcolor=0)
+    
     left_band = draw_band(x_center - gap_between_bands - forehead_band_width, -tilt_angle)
     right_band = draw_band(x_center + gap_between_bands, tilt_angle)
-
     mask = ImageChops.add(mask, left_band)
     mask = ImageChops.add(mask, right_band)
-
+    
+    # --- Jawline contour ---
+    left_jaw_indices = [234, 93, 132, 58, 172, 136, 150, 149, 176, 148]
+    right_jaw_indices = [454, 397, 288, 379, 378, 400, 377]
+    
+    def jaw_points(indices, shift=0):
+        points = [(int(lm[i].x * w) + shift, int(lm[i].y * h)) for i in indices]
+        lip_upper_y = int(lm[13].y * h)
+        return [(x, y) for x, y in points if y > lip_upper_y]
+    
+    shift_x = int(nose_width * 0.05)
+    left_jaw_pts = jaw_points(left_jaw_indices, -shift_x)
+    right_jaw_pts = jaw_points(right_jaw_indices, shift_x)
+    
+    jaw_mask = Image.new("L", img.size, 0)
+    jaw_draw = ImageDraw.Draw(jaw_mask)
+    jaw_line_width = max(6, int(nose_width * 0.2))
+    
+    for pts in [left_jaw_pts, right_jaw_pts]:
+        if len(pts) > 1:
+            jaw_draw.line(pts, fill=255, width=jaw_line_width, joint="curve")
+            jaw_draw.ellipse([pts[0][0]-jaw_line_width//2, pts[0][1]-jaw_line_width//2,
+                              pts[0][0]+jaw_line_width//2, pts[0][1]+jaw_line_width//2], fill=255)
+            jaw_draw.ellipse([pts[-1][0]-jaw_line_width//2, pts[-1][1]-jaw_line_width//2,
+                              pts[-1][0]+jaw_line_width//2, pts[-1][1]+jaw_line_width//2], fill=255)
+    
+    mask = ImageChops.add(mask, jaw_mask)
+    
+    # --- Cheekbone tilted lines ---
+    def rotate_point(x, y, cx, cy, angle_deg):
+        angle = math.radians(angle_deg)
+        cos_a, sin_a = math.cos(angle), math.sin(angle)
+        dx, dy = x - cx, y - cy
+        qx = cx + cos_a*dx - sin_a*dy
+        qy = cy + cos_a*dy + sin_a*dx
+        return int(qx), int(qy)
+    
+    def shorten_line(x1, y1, x2, y2, factor):
+        cx, cy = (x1 + x2)/2, (y1 + y2)/2
+        return int(cx + (x1-cx)*factor), int(cy + (y1-cy)*factor), int(cx + (x2-cx)*factor), int(cy + (y2-cy)*factor)
+    
+    tilt_angle_cheek = -15
+    cheek_len_factor = 0.5
+    
+    left_cheek_pts = shorten_line(int(lm[234].x*w), int(lm[234].y*h),
+                                  int(lm[61].x*w), int(lm[61].y*h), cheek_len_factor)
+    right_cheek_pts = shorten_line(int(lm[454].x*w), int(lm[454].y*h),
+                                   int(lm[291].x*w), int(lm[291].y*h), cheek_len_factor)
+    
+    cheek_mask = Image.new("L", img.size, 0)
+    cheek_draw = ImageDraw.Draw(cheek_mask)
+    cheek_line_width = max(6, int(nose_width*0.25))
+    
+    cheek_draw.line([left_cheek_pts[:2], left_cheek_pts[2:]], fill=255, width=cheek_line_width)
+    cheek_draw.line([right_cheek_pts[:2], right_cheek_pts[2:]], fill=255, width=cheek_line_width)
+    
+    for x, y in [left_cheek_pts[:2], left_cheek_pts[2:], right_cheek_pts[:2], right_cheek_pts[2:]]:
+        cheek_draw.ellipse([x-cheek_line_width//2, y-cheek_line_width//2, x+cheek_line_width//2, y+cheek_line_width//2], fill=255)
+    
+    mask = ImageChops.add(mask, cheek_mask)
+    
+    # --- Blur & intensity ---
     mask_blur = mask.filter(ImageFilter.GaussianBlur(blur_radius))
     mask_array = np.array(mask_blur).astype(np.float32) * intensity
     mask_array = np.clip(mask_array, 0, 255).astype(np.uint8)
-
+    
     overlay = Image.new("RGBA", img.size, base_color + (255,))
     overlay.putalpha(Image.fromarray(mask_array))
+    
     img_final = Image.alpha_composite(img_rgba, overlay).convert("RGB")
-
     return cv2.cvtColor(np.array(img_final), cv2.COLOR_RGB2BGR)
