@@ -1,6 +1,7 @@
 from celery import Celery
 import logging
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from db import SessionLocal
 from email_sender import EmailSender
 from models import User, EmailQueue, UserEmailPreferences
