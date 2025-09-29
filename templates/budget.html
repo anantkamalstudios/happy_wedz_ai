@@ -2,26 +2,17 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Plan Your Wedding Budget</title>
+  <title>Budget Update</title>
 </head>
-<body style="font-family: Arial, sans-serif; background:#f7f7f7; margin:0; padding:0;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto; background:#fff; padding:20px;">
-    <tr>
-      <td>
-        <h2 style="color:#333;">Hi {{ user_name }},</h2>
-        <p>We noticed you're interested in <strong>{{ city }}</strong>. Let's plan your wedding budget smartly!</p>
-
-        <p>Allocate your funds across:</p>
-        <ul>
-          <li>Venue & Accommodation</li>
-          <li>Catering & Bar</li>
-          <li>Photography & Videography</li>
-          <li>Decor & Entertainment</li>
-        </ul>
-
-        <a href="{{ app_url }}/budget-planner?city={{ city }}" style="display:inline-block; margin-top:20px; padding:12px 20px; background:#51cf66; color:#fff; text-decoration:none;">Create Your Budget</a>
-      </td>
-    </tr>
-  </table>
+<body>
+  <h2>Hi {{ name }}!</h2>
+  <p>Here’s a quick snapshot of your wedding budget in {{ city }}:</p>
+  <ul>
+  {% for category, amount in allocated_budget.items() %}
+    <li>{{ category | capitalize }}: ₹{{ amount }}</li>
+  {% endfor %}
+  </ul>
+  <a href="{{ site_url }}/budget-planner">Update Your Budget</a>
+  <p>Keep your finances on track for a dream wedding!</p>
 </body>
 </html>

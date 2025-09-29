@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Top Vendors in {{ city }}</title>
+</head>
+<body>
+  <h2>Hi {{ name }}!</h2>
+  <p>We found some amazing vendors in {{ city }} for your destination wedding:</p>
+  <ul>
+  {% for vendor in vendors %}
+    <li>
+      <strong>{{ vendor.name }}</strong> — {{ vendor.service_type }}, {{ vendor.price_range }}, Rating: {{ vendor.rating }}/5
+    </li>
+  {% endfor %}
+  </ul>
+  <a href="{{ site_url }}/vendors?city={{ city }}">See All Vendors</a>
+  <p>Make your wedding unforgettable with the best vendors!</p>
+</body>
+</html>

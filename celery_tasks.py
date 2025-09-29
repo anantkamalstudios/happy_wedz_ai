@@ -11,16 +11,18 @@ celery.config_from_object("celeryconfig")
 logger = logging.getLogger(__name__)
 
 # Map email types/features to template files (HTML or text)
-EMAIL_TEMPLATES = {
-    "welcome": "welcome_template.html",
-    "wishlist": "wishlist_template.html",
-    "todo": "todo_template.html",
-    "vendor_recommendation": "vendor_template.html",
-    "budget_update": "budget.html",
-    "budget_planner": "budget_planner/feature_intro.html",
-    "guestlist": "guestlist/reminder.html",
-    # Add more feature-specific templates here
+subject_map = {
+    "wishlist": "Add to your Wishlist in {{ city }}!",
+    "budget_planner": "Plan your Budget for {{ city }} Weddings",
+    "guestlist": "Invite your Guests in {{ city }}",
+    "booking": "Complete your Booking for {{ city }}",
+    "vendor_recommendation": "Top Vendors in {{ city }} for your Wedding"
 }
+
+subject_template = subject_map.get(email_data['feature'], "Your Wedding Update")
+from jinja2 import Template
+subject = Template(subject_template).render(city=email_data['city'])
+
 
 
 @celery.task(bind=True, max_retries=3)
