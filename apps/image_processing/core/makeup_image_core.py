@@ -3,7 +3,7 @@ from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
 import io
 from apps.image_processing.models.makeup_image_model import (
-    db, UserImage, ImageType, CategoryEnum, Product, UserMakeupResultImage, ProductDetailedEnum
+    db, UserImage, ImageType, CategoryEnum, Product, UserMakeupResultImage
 )
 from ultralytics import YOLO
 import mediapipe as mp
@@ -1065,7 +1065,7 @@ def apply_kajal(image, kajal_color_hex="#000000", intensity=3):
         results = face_mesh.process(image_bgr)
 
         if not results.multi_face_landmarks:
-            print("No face detected")
+            # print("No face detected")
             return image
 
         face_landmarks = results.multi_face_landmarks[0]

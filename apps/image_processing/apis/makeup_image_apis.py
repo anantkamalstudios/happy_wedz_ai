@@ -3,10 +3,13 @@ from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
 import io
 from apps.image_processing.models.makeup_image_model import (
-    db, UserImage, ImageType, CategoryEnum, Product, UserMakeupResultImage, ProductDetailedEnum
+    db, UserImage, ImageType, CategoryEnum, Product, UserMakeupResultImage, ProductDetailedCategory
 )
 from apps.image_processing.core.makeup_image_core import (
     allowed_file, count_people, is_real_photo_strict, is_blurry, contains_person, is_full_body_front_facing, apply_lipstick, apply_blush, apply_eyeshadow, apply_contact_lenses, apply_foundation, apply_mascara, apply_kajal, apply_concealer, apply_contour
+)
+from apps.image_processing.core.jwellery_image_core import (
+    apply_bindi, apply_mangtika
 )
 from ultralytics import YOLO
 import mediapipe as mp
@@ -24,11 +27,15 @@ from transformers import SegformerImageProcessor, SegformerForSemanticSegmentati
 import tempfile
 import os
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
+import json
+import logging
+from io import BytesIO
 
 
 
 images_bp = Blueprint("images", __name__, url_prefix="/api/images")
 products_bp = Blueprint("products", __name__, url_prefix="/api/products")
+product_categories_bp = Blueprint("product_categories", __name__, url_prefix="/api/product_categories")
 
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(
@@ -39,7 +46,29 @@ pose = mp_pose.Pose(
 )
 mp_face_mesh = mp.solutions.face_mesh
 
-MAX_FILE_SIZE = 15 * 1024 * 1024
+MAX_FILE_SIZE = 5 * 1024 * 1024
+
+
+def resize_image_bytes(image_bytes, max_size=300, quality=40):
+    try:
+        image = Image.open(BytesIO(image_bytes))
+
+        # Convert to RGB (to remove alpha/transparency and unify format)
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+
+        # Resize keeping aspect ratio
+        image.thumbnail((max_size, max_size))
+
+        # Save to in-memory buffer
+        output = BytesIO()
+        image.save(output, format="JPEG", quality=quality, optimize=True)
+        return output.getvalue()
+
+    except Exception as e:
+        print("⚠️ Image normalization failed:", e)
+        return image_bytes  # fallback (send original)
+
 
 
 # POST /api/images  -> upload & store in DB
@@ -134,144 +163,193 @@ def get_image(image_id):
 
 @images_bp.route("/apply-makeup", methods=["POST"])
 def apply_makeup_api():
-    payload = request.get_json(silent=True) or {}
-    image_id = payload.get("image_id")
-    product_ids = payload.get("product_ids", [])
-
-    if not image_id or not product_ids:
-        return jsonify({"error": "image_id and product_ids are required"}), 400
-
-    img_row = UserImage.query.get(image_id)
-    if not img_row:
-        return jsonify({"error": "image not found"}), 404
-
-    nparr = np.frombuffer(img_row.data, np.uint8)
-    original_img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    if original_img is None:
-        return jsonify({"error": "failed to decode image"}), 400
-
-    rgb_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2RGB)
-    face_landmarks_list = face_recognition.face_landmarks(rgb_img)
-    if not face_landmarks_list:
-        return jsonify({"error": "no face detected"}), 400
-
-    landmarks = face_landmarks_list[0]
-    result = original_img.copy()
-    stored_products = []
-
-    for product_id in product_ids:
-        product = Product.query.get(product_id)
-        if not product:
-            return jsonify({"error": f"Product not found: {product_id}"}), 404
-
-        feature = product.product_detailed_category.value.lower()
-
-        intensity = float(payload.get(f"{feature}_intensity", 0.5))
-        radius = int(payload.get(f"{feature}_radius", 50))
-        thickness = int(payload.get(f"{feature}_thickness", 25))
-        radius_scale = float(payload.get(f"{feature}_radius_scale", 1.0))
-        # breakpoint()
-        hex_color = product.product_color_hex
-
-        if feature == "lipstick":
-            result = apply_lipstick(result, landmarks, hex_color, intensity)
-        elif feature == "blush":
-            result = apply_blush(result, landmarks, hex_color, intensity, radius)
-        elif feature == "eyeshadow":
-            result = apply_eyeshadow(result, landmarks, hex_color, intensity, thickness)
-        elif feature in ["lenses", "contactlenses"]:
-            result = apply_contact_lenses(result, lens_color=hex_color, lens_intensity=intensity, lens_radius_scale=radius_scale)
-        # elif feature == "primer":
-        #     result = apply_primer(result, landmarks, hex_color, intensity)
-        elif feature == "foundation":
-            result = apply_foundation(result, landmarks, hex_color, intensity)
-        elif feature == "mascara":
-            result = apply_mascara(result, landmarks, intensity=1.0)
-        elif feature == "kajal":
-            result = apply_kajal(result, kajal_color_hex=hex_color, intensity=intensity)
-        elif feature == "concealer":
-            h, w = result.shape[:2]
-            result = apply_concealer(result, intensity=intensity, color_hex=hex_color)
-        elif feature == "contour":
-            h, w = result.shape[:2]
-            result = apply_contour(result, intensity=intensity, color_hex=hex_color)
-
-        user_makeup_entry = UserMakeupResultImage(
-            result_image_id=image_id,
-            result_product_id=product.id
+    try:
+        payload = request.get_json(silent=True) or {}
+        image_id = payload.get("image_id")
+        product_ids = payload.get("product_ids", [])
+        
+    
+        if not image_id or not product_ids:
+            return jsonify({"error": "image_id and product_ids are required"}), 400
+    
+        img_row = UserImage.query.get(image_id)
+        if not img_row:
+            return jsonify({"error": "image not found"}), 404
+    
+        nparr = np.frombuffer(img_row.data, np.uint8)
+        original_img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if original_img is None:
+            return jsonify({"error": "failed to decode image"}), 400
+    
+        rgb_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2RGB)
+        face_landmarks_list = face_recognition.face_landmarks(rgb_img)
+        if not face_landmarks_list:
+            return jsonify({"error": "no face detected"}), 400
+    
+        landmarks = face_landmarks_list[0]
+        result = original_img.copy()
+        stored_products = []
+    
+        for product_id in product_ids:
+            product = Product.query.get(product_id)
+            if not product:
+                return jsonify({"error": f"Product not found: {product_id}"}), 404
+    
+            feature = product.detailed_category.name.lower()
+    
+            intensity = float(payload.get(f"{feature}_intensity", 0.5))
+            radius = int(payload.get(f"{feature}_radius", 50))
+            thickness = int(payload.get(f"{feature}_thickness", 25))
+            radius_scale = float(payload.get(f"{feature}_radius_scale", 1.0))
+            hex_color = payload.get(f"{feature}_color")
+            bindi_size = int(payload.get("bindi_size", 6))
+            # hex_color = product.product_colors
+    
+            if feature == "lipstick":
+                result = apply_lipstick(result, landmarks, hex_color, intensity)
+            elif feature == "blush":
+                result = apply_blush(result, landmarks, hex_color, intensity, radius)
+            elif feature == "eyeshadow":
+                result = apply_eyeshadow(result, landmarks, hex_color, intensity, thickness)
+            elif feature in ["lenses", "contactlenses"]:
+                result = apply_contact_lenses(result, lens_color=hex_color, lens_intensity=intensity, lens_radius_scale=radius_scale)
+            # elif feature == "primer":
+            #     result = apply_primer(result, landmarks, hex_color, intensity)
+            elif feature == "foundation":
+                result = apply_foundation(result, landmarks, hex_color, intensity)
+            elif feature == "mascara":
+                result = apply_mascara(result, landmarks, intensity=1.0)
+            elif feature == "kajal":
+                result = apply_kajal(result, kajal_color_hex=hex_color, intensity=intensity)
+            elif feature == "concealer":
+                result = apply_concealer(result, intensity=intensity, color_hex=hex_color)
+            elif feature == "contour":
+                result = apply_contour(result, intensity=intensity, color_hex=hex_color)
+            elif feature == "bindi":
+                result = apply_bindi(result, size=bindi_size, color_hex=hex_color)
+            elif feature == "mangtika":
+                result = apply_mangtika(result, product.product_real_image, scale_factor=0.8)
+    
+            user_makeup_entry = UserMakeupResultImage(
+                result_image_id=image_id,
+                result_product_id=product.id
+            )
+            db.session.add(user_makeup_entry)
+            db.session.flush()
+    
+            stored_products.append({
+                    "product_id": product.id,
+                    "processed_image_id": user_makeup_entry.id,
+                    "hex_color": hex_color,
+                    "detailed_category": product.detailed_category.name
+                })
+    
+        ok, buf = cv2.imencode(".png", result)
+        if not ok:
+            return jsonify({"error": "failed to encode result"}), 500
+    
+        new_data = buf.tobytes()
+        new_img = UserImage(
+            filename=f"{image_id}_makeup.png",
+            content_type="image/png",
+            size_bytes=len(new_data),
+            data=new_data,
+            image_type=ImageType.RESULT
         )
-        db.session.add(user_makeup_entry)
-        db.session.flush()
-
-        stored_products.append({
-            "product_id": product.id,
-            "processed_image_id": user_makeup_entry.id,
-            "hex_color": hex_color,
-            "detailed_category": product.product_detailed_category.value
-        })
-
-    ok, buf = cv2.imencode(".png", result)
-    if not ok:
-        return jsonify({"error": "failed to encode result"}), 500
-
-    new_data = buf.tobytes()
-    new_img = UserImage(
-        filename=f"{image_id}_makeup.png",
-        content_type="image/png",
-        size_bytes=len(new_data),
-        data=new_data,
-        image_type=ImageType.RESULT
-    )
-    db.session.add(new_img)
-    db.session.commit()
-
-    fetch_url = url_for("images.get_image", image_id=new_img.id, _external=True)
-
-    return jsonify({
-        "processed_image_id": new_img.id,
-        "url": fetch_url,
-        "applied_products": stored_products
-    }), 201
+        db.session.add(new_img)
+        db.session.commit()
+    
+        fetch_url = f"https://www.happywedz.com/ai/api/images/{new_img.id}"
+    
+        return jsonify({
+            "processed_image_id": new_img.id,
+            "url": fetch_url,
+            "applied_products": stored_products
+        }), 201
+    except Exception as e:
+        # Logs request payload + full stack trace
+        logging.error(
+            "Error in /apply-makeup API. Payload=%s",
+            payload,
+            exc_info=True
+        )
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @products_bp.route("/filter_products", methods=["GET"])
 def get_products():
     category = request.args.get("category")
     detailed_category = request.args.get("detailed_category")
+    user = request.args.get("user")  # 'bride' or 'groom'
 
-    query = Product.query
+    query = ProductDetailedCategory.query
 
+    # ---- Filter by main category (MAKEUP / JWELLERY) ----
     if category:
         try:
             category_enum = next(c for c in CategoryEnum if c.value.lower() == category.lower())
-            query = query.filter_by(product_category=category_enum)
+            query = query.join(Product).filter(Product.product_category == category_enum)
         except StopIteration:
             return jsonify({"error": "Invalid category"}), 400
 
-
+    # ---- Filter by detailed category ----
     if detailed_category:
-        try:
-            detailed_enum = next(d for d in ProductDetailedEnum if d.value.lower() == detailed_category.lower())
-            query = query.filter_by(product_detailed_category=detailed_enum)
-        except StopIteration:
-            return jsonify({"error": "Invalid detailed category"}), 400
+        query = query.filter(ProductDetailedCategory.name.ilike(detailed_category))
 
-    products = query.all()
+    # ---- User-specific product filtering ----
+    if user:
+        user = user.lower()
+        if user not in ["bride", "groom"]:
+            return jsonify({"error": "Invalid user type. Must be 'bride' or 'groom'."}), 400
 
-    result = [
-        {
-            "id": p.id,
-            "category": p.product_category.value,
-            "detailed_category": p.product_detailed_category.value,
-            "product_name": p.product_name,
-            "brand_name": p.brand_name,
-            "price": str(p.price),
-            "product_real_image": f"data:{p.product_real_image_type};base64," + base64.b64encode(p.product_real_image).decode("utf-8"),
-            "product_color_hex": p.product_color_hex,
-            "description": p.description,
-        }
-        for p in products
-    ]
+        if user == "groom":
+            allowed_groom_categories = [
+                "foundation",
+                "concealer",
+                "contactlenses",
+                "lipbalm"
+            ]
+            query = query.filter(
+                db.func.lower(ProductDetailedCategory.name).in_(allowed_groom_categories)
+            )
+
+    detailed_categories = query.all()
+    result = []
+
+    # ---- Build response ----
+    for dc in detailed_categories:
+        products_list = []
+        for p in dc.products:
+            compressed_image = resize_image_bytes(p.product_real_image)
+
+            products_list.append({
+                "id": p.id,
+                "product_name": p.product_name,
+                "brand_name": p.brand_name,
+                "price": str(p.price),
+                "product_colors": p.product_colors,
+                "description": p.description,
+                "product_real_image": (
+                    f"data:{p.product_real_image_type};base64,"
+                    + base64.b64encode(compressed_image).decode("utf-8")
+                ),
+            })
+
+        if dc.image:
+            compressed_dc_image = resize_image_bytes(dc.image)
+            dc_image_base64 = (
+                f"data:image/jpeg;base64,"
+                + base64.b64encode(compressed_dc_image).decode("utf-8")
+            )
+        else:
+            dc_image_base64 = None
+
+        result.append({
+            "product_detailed_category_name": dc.name,
+            "product_detailed_image": dc_image_base64,
+            "products": products_list
+        })
+
     return jsonify(result), 200
 
 
@@ -292,16 +370,23 @@ def create_product():
 
     if len(content) > MAX_FILE_SIZE:
         return jsonify({"error": f"File too large. Max {MAX_FILE_SIZE//(1024*1024)} MB"}), 400
+    colors_str = request.form.get("product_colors")
+    product_colors = json.loads(colors_str) if colors_str else []
 
+    category_id = int(request.form.get("product_detailed_category_id"))  # frontend sends id
+    detailed_category = ProductDetailedCategory.query.get(category_id)
+    if not detailed_category:
+        return jsonify({"error": "Invalid detailed category ID"}), 400
+    # print(request.form.get("product_category"))
     product = Product(
         product_category=request.form.get("product_category"),
-        product_detailed_category=request.form.get("product_detailed_category"),
+        detailed_category=detailed_category,   # link to new model
         product_name=request.form.get("product_name"),
         brand_name=request.form.get("brand_name"),
         price=request.form.get("price"),
         product_real_image=content,
         product_real_image_type=file.mimetype or "application/octet-stream",
-        product_color_hex=request.form.get("product_color_hex"),
+        product_colors=product_colors,
         description=request.form.get("description"),
     )
 
@@ -310,3 +395,43 @@ def create_product():
 
     return jsonify({"id": product.id, "message": "Product created successfully"}), 201
 
+
+@product_categories_bp.route("/create_category", methods=["POST"])
+def create_product_detailed_category():
+    name = request.form.get("name")
+    if not name:
+        return jsonify({"error": "Category name is required"}), 400
+
+    # Check if name already exists
+    existing = ProductDetailedCategory.query.filter_by(name=name).first()
+    if existing:
+        return jsonify({"error": "Category with this name already exists"}), 400
+
+    image_data = None
+    image_type = None
+
+    if "image" in request.files:
+        file = request.files["image"]
+        if file.filename != "":
+            if not allowed_file(file.filename):
+                return jsonify({"error": "Unsupported file format"}), 400
+            content = file.read()
+            if len(content) > MAX_FILE_SIZE:
+                return jsonify({"error": f"File too large. Max {MAX_FILE_SIZE // (1024*1024)} MB"}), 400
+            image_data = content
+            image_type = file.mimetype or "application/octet-stream"
+
+    category = ProductDetailedCategory(
+        name=name,
+        image=image_data,
+        image_type=image_type
+    )
+
+    db.session.add(category)
+    db.session.commit()
+
+    return jsonify({
+        "id": category.id,
+        "name": category.name,
+        "message": "Product detailed category created successfully"
+    }), 201
