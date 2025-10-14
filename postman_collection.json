@@ -1,0 +1,75 @@
+{
+  "info": {
+    "name": "Recommendation API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Recommendations",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/recommendations/{{user_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["recommendations", "{{user_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Get User Preferences",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/user/{{user_id}}/preferences",
+          "host": ["{{base_url}}"],
+          "path": ["user", "{{user_id}}", "preferences"]
+        }
+      }
+    },
+    {
+      "name": "Get Trending",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/trending",
+          "host": ["{{base_url}}"],
+          "path": ["trending"]
+        }
+      }
+    },
+    {
+      "name": "Log Interaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": 23,\n  \"item_type\": \"vendor\",\n  \"item_id\": 1,\n  \"interaction_type\": \"view\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/interact",
+          "host": ["{{base_url}}"],
+          "path": ["interact"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "user_id",
+      "value": "23"
+    }
+  ]
+}

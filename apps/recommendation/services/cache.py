@@ -21,7 +21,7 @@ def reload_data():
     print("🔄 Reloading data from database...")
 
     # --- Load venues ---
-    venues_df = pd.read_sql("SELECT * FROM venues_test", engine)
+    venues_df = pd.read_sql("SELECT * FROM sub_venues", engine)
     venues_cache = {}
     for _, venue in venues_df.iterrows():
         venues_cache[venue['id']] = {
@@ -31,29 +31,35 @@ def reload_data():
             'capacity': venue['capacity'] or 0,
             'price': venue['price'] or 0,
             'rating': venue['rating'] or 0,
+            'image': venue.get('image', ''),
             'type': 'venue'
         }
 
     # --- Load vendors ---
-    vendors_df = pd.read_sql("SELECT * FROM vendors_test", engine)
+    vendors_df = pd.read_sql("SELECT * FROM sub_vendors", engine)
     vendors_cache = {}
     vendor_categories_cache = defaultdict(list)
     for _, vendor in vendors_df.iterrows():
-        normalized = VendorCategories.normalize_vendor_type(vendor['type'])
+        vendor_id = vendor.get('id')
+        if not vendor_id:
+            continue  # Skip vendors without id
+        vendor_type = vendor.get('type')
+        normalized = VendorCategories.normalize_vendor_type(vendor_type)
         category_info = VendorCategories.get_category_display_info(normalized)
 
         vendor_data = {
-            'id': vendor['id'],
-            'name': vendor['name'],
-            'city': vendor['city'],
+            'id': vendor_id,
+            'name': vendor.get('name', 'Unknown'),
+            'city': vendor.get('city', 'Unknown'),
             'type': normalized,
-            'original_type': vendor['type'],
+            'original_type': vendor_type,
             'category': normalized,
-            'category_display': category_info['display_name'],
-            'rating': vendor['rating'] or 0,
+            'category_display': category_info.get('display_name', 'Other'),
+            'rating': vendor.get('rating', 0) or 0,
+            'image': vendor.get('image', ''),
             'item_type': 'vendor'
         }
-        vendors_cache[vendor['id']] = vendor_data
+        vendors_cache[vendor_id] = vendor_data
         vendor_categories_cache[normalized].append(vendor_data)
 
     # --- Load recent interactions (last 90 days) ---

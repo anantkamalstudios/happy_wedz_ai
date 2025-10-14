@@ -21,7 +21,7 @@ def recommend(user_id):
         vendors = [r for r in recommendations if r.get('type') != 'venue' and r.get('city') in top_venue_cities]
 
         # Step 3: Categorize vendors
-        vendor_categories = defaultdict(lambda: {"display_name": "Other Services", "icon": "⭐", "items": []})
+        vendor_categories = defaultdict(lambda: {"display_name": "Other Services", "items": []})
         for cat, info in VendorCategories.CATEGORIES.items():
             vendor_categories[cat] = {**info, "items": []}
         for v in vendors:
