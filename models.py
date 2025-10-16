@@ -1,19 +1,32 @@
 from datetime import datetime
+from click import DateTime
 from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, ForeignKey, JSON, Boolean, CheckConstraint
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
-    email = Column(Text, unique=True, nullable=False)
-    name = Column(Text)
-    activities = relationship("UserActivity", back_populates="user")
-    email_queue = relationship("EmailQueue", back_populates="user")
-    email_logs = relationship("EmailLog", back_populates="user")
-    preferences = relationship("UserEmailPreferences", back_populates="user", uselist=False)
+class Users(Base):
+    __tablename__ = 'users'
 
+    id = Column(Integer, primary_key=True, nullable=False)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    password = Column(String, )
+    phone = Column(String, )
+    role = Column(String, )
+    wedding_venue = Column(String, )
+    country = Column(String, )
+    city = Column(String, )
+    wedding_date = Column(DateTime, )
+    google_id = Column(String, )
+    otp = Column(String, )
+    otp_expire = Column(DateTime, )
+    profile_image = Column(String, )
+    cover_image = Column(String, )
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+    password_reset_token = Column(String, )
+    password_reset_expires = Column(String, )
 class EmailTemplate(Base):
     __tablename__ = "email_templates"
     id = Column(Integer, primary_key=True)
