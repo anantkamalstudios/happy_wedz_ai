@@ -20,14 +20,20 @@ import torch
 from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation
 import tempfile
 import os
-from PIL import Image, ImageDraw, ImageFilter, ImageChops
+from PIL import Image, ImageDraw, ImageFilter, ImageChops, ImageOps
 import math
+import easyocr
+import clip
+import threading
+
+clip_lock = threading.Lock()
 
 
 # --------------------------Upload Image Validation Functions-----------------------
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png"}
 yolo_model = YOLO("yolov8n.pt")
+yolo_face_model = YOLO("yolov8n-face.pt") 
 
 def allowed_file(filename):
     if "." not in filename:
@@ -54,23 +60,183 @@ def count_people(image_data: bytes) -> int:
         return 0
 
 
+def detect_and_crop_faces(image_bytes: bytes, padding_ratio: float = 0.25):
+    """Detects faces in an image and returns a list of PIL cropped faces."""
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        image_np = np.array(image).copy()
+        img_w, img_h = image.size
+
+        results = yolo_face_model(image_np, verbose=False)
+        boxes = results[0].boxes.xyxy.cpu().numpy()
+
+        cropped_faces = []
+        for box in boxes:
+            x1, y1, x2, y2 = map(int, box[:4])
+            w, h = x2 - x1, y2 - y1
+            pad_w, pad_h = int(w * padding_ratio), int(h * padding_ratio)
+            x1 = max(0, x1 - pad_w)
+            y1 = max(0, y1 - pad_h)
+            x2 = min(img_w, x2 + pad_w)
+            y2 = min(img_h, y2 + pad_h)
+            cropped_faces.append(image.crop((x1, y1, x2, y2)))
+
+        return cropped_faces
+    except Exception as e:
+        print("⚠️ Face detection error:", e)
+        return []
+
+
+# Load CLIP once globally
+device = "cuda" if torch.cuda.is_available() else "cpu"
+clip_model, preprocess = clip.load("ViT-B/32", device=device)
+clip_model.eval()
+
+seg_model = SegformerForSemanticSegmentation.from_pretrained("nvidia/segformer-b0-finetuned-ade-512-512")
+seg_model.eval()
+
+# Predefined prompt sets
+REAL_PROMPTS = [
+    "a real photograph of a person",
+    "a portrait photo of a real human face",
+    "a realistic photo taken by a camera",
+    "a high resolution DSLR photo of a person",
+    "a real human photograph without digital painting"
+]
+
+ILLUSTRATION_PROMPTS = [
+    "a cartoon drawing of a person",
+    "a vector illustration of a person",
+    "a 3D render of a person",
+    "a digital art painting of a person",
+    "a stylized animation of a person"
+]
+
 def is_real_photo_strict(image_content: bytes) -> bool:
     try:
         pil_image = Image.open(io.BytesIO(image_content)).convert("RGB")
-        img = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        pil_image = ImageOps.exif_transpose(pil_image)
+        image_input = preprocess(pil_image).unsqueeze(0).to(device)
 
-        pixel_std = np.std(gray.astype(np.float32))
-        edge_density = np.mean(cv2.Canny(gray, 50, 150) > 0)
+        texts = REAL_PROMPTS + ILLUSTRATION_PROMPTS
+        text_tokens = clip.tokenize(texts).to(device)
 
-        if pixel_std < 5:
+        with clip_lock:
+            clip_model.eval()
+            with torch.no_grad():
+                image_features = clip_model.encode_image(image_input)
+                text_features = clip_model.encode_text(text_tokens)
+
+                # Normalize
+                image_features /= image_features.norm(dim=-1, keepdim=True)
+                text_features /= text_features.norm(dim=-1, keepdim=True)
+
+                sims = (100.0 * image_features @ text_features.T).softmax(dim=-1)
+                probs = sims.squeeze().cpu().numpy()
+
+        real_prob = np.mean(probs[:len(REAL_PROMPTS)])
+        illus_prob = np.mean(probs[len(REAL_PROMPTS):])
+        # print(f"[DEBUG] real_prob={real_prob:.4f}, illus_prob={illus_prob:.4f}")
+
+        # 15% margin as in Colab
+        if real_prob > illus_prob * 1.15:
+            return True
+        elif illus_prob > real_prob * 1.15:
             return False
-        if edge_density < 0.002:  
-            return False
+        else:
+            # ambiguous → treat as real
+            return True
 
+    except Exception as e:
+        # print(f"[is_real_photo_strict] Error in API: {e}")
+        # Fail-safe: treat as real
         return True
-    except Exception:
-        return False
+    
+
+def detect_glasses_from_image(image_content):
+    try:
+        # Convert bytes → PIL
+        image = Image.open(io.BytesIO(image_content)).convert("RGB")
+        image_input = preprocess(image).unsqueeze(0).to(device)
+
+        # Prompts
+        text_inputs = clip.tokenize([
+            "a person wearing glasses",
+            "a person not wearing glasses"
+        ]).to(device)
+
+        # Thread-safe inference
+        with clip_lock:
+            clip_model.eval()
+            with torch.no_grad():
+                logits_per_image, _ = clip_model(image_input, text_inputs)
+                probs = logits_per_image.softmax(dim=-1).cpu().numpy()[0]
+
+        classes = ["Wearing Glasses", "No Glasses"]
+        prediction = classes[int(probs.argmax())]
+        confidence = float(probs.max() * 100)
+
+        # print(f"Glasses Detection: {prediction} ({confidence:.2f}% confidence)")
+
+        # Return True if image is valid (no glasses), False if wearing glasses
+        return prediction == "No Glasses"
+
+    except Exception as e:
+        # print(f"Glasses detection failed in API: {e}")
+        # Fail-safe: allow image if detection fails
+        return True
+
+
+# Global lock for Mediapipe (thread safety)
+mp_lock = threading.Lock()
+
+def is_face_only(image_content: bytes) -> bool:
+    try:
+        # Convert bytes → PIL → NumPy
+        pil_image = Image.open(io.BytesIO(image_content)).convert("RGB")
+        image = np.array(pil_image).astype(np.uint8)
+
+        # Resize to fixed width for consistent Mediapipe detection
+        height, width = image.shape[:2]
+        max_dim = 512
+        if max(height, width) > max_dim:
+            scale = max_dim / max(height, width)
+            new_size = (int(width * scale), int(height * scale))
+            image = cv2.resize(image, new_size, interpolation=cv2.INTER_AREA)
+
+        mp_pose = mp.solutions.pose
+
+        with mp_lock:
+            pose = mp_pose.Pose(static_image_mode=True)
+            results = pose.process(image)
+            pose.close()
+
+        if results.pose_landmarks:
+            # Check lower-body landmarks
+            body_landmarks = [
+                mp_pose.PoseLandmark.LEFT_HIP, mp_pose.PoseLandmark.RIGHT_HIP,
+                mp_pose.PoseLandmark.LEFT_KNEE, mp_pose.PoseLandmark.RIGHT_KNEE,
+                mp_pose.PoseLandmark.LEFT_ANKLE, mp_pose.PoseLandmark.RIGHT_ANKLE
+            ]
+
+            # Lower the visibility threshold for API images
+            detected = any(results.pose_landmarks.landmark[lm].visibility > 0.3 for lm in body_landmarks)
+
+            if detected:
+                # print("❌ Full body detected")
+                return False
+            else:
+                # print("✅ Only face / upper body detected")
+                return True
+        else:
+            # print("✅ Only face detected")
+            return True
+
+    except Exception as e:
+        # print(f"[is_face_only] Error: {e}")
+        # Fail-safe: accept image if detection fails
+        return True
+    
 
 
 def is_blurry(image_content: bytes,

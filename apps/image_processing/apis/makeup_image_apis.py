@@ -6,7 +6,7 @@ from apps.image_processing.models.makeup_image_model import (
     db, UserImage, ImageType, CategoryEnum, Product, UserMakeupResultImage, ProductDetailedCategory
 )
 from apps.image_processing.core.makeup_image_core import (
-    allowed_file, count_people, is_real_photo_strict, is_blurry, contains_person, is_full_body_front_facing, apply_lipstick, apply_blush, apply_eyeshadow, apply_contact_lenses, apply_foundation, apply_mascara, apply_kajal, apply_concealer, apply_contour
+    allowed_file, count_people, is_real_photo_strict, is_blurry, contains_person, is_full_body_front_facing, apply_lipstick, apply_blush, apply_eyeshadow, apply_contact_lenses, apply_foundation, apply_mascara, apply_kajal, apply_concealer, apply_contour, detect_glasses_from_image, is_face_only, detect_and_crop_faces
 )
 from apps.image_processing.core.jwellery_image_core import (
     apply_bindi, apply_mangtika
@@ -46,7 +46,7 @@ pose = mp_pose.Pose(
 )
 mp_face_mesh = mp.solutions.face_mesh
 
-MAX_FILE_SIZE = 5 * 1024 * 1024
+MAX_FILE_SIZE = 15 * 1024 * 1024
 
 
 def resize_image_bytes(image_bytes, max_size=300, quality=40):
@@ -66,12 +66,11 @@ def resize_image_bytes(image_bytes, max_size=300, quality=40):
         return output.getvalue()
 
     except Exception as e:
-        print("⚠️ Image normalization failed:", e)
+        # print("⚠️ Image normalization failed:", e)
         return image_bytes  # fallback (send original)
 
 
 
-# POST /api/images  -> upload & store in DB
 @images_bp.route("", methods=["POST"])
 def upload_image():
     if "image" not in request.files:
@@ -82,57 +81,65 @@ def upload_image():
         return jsonify({"error": "empty filename"}), 400
 
     if not allowed_file(file.filename):
-        return jsonify(
-            {
-                "error": (
-                    "unsupported file format. "
-                    "Allowed formats are jpg, jpeg, png, gif, webp"
-                )
-            }
-        ), 400
+        return jsonify({"error": "unsupported file format"}), 400
 
     filename = secure_filename(file.filename)
     content = file.read()
 
     if len(content) > MAX_FILE_SIZE:
-        return jsonify(
-            {
-                "error": (
-                    f"file too large. Max allowed size is "
-                    f"{MAX_FILE_SIZE // (1024*1024)} MB"
-                )
-            }
-        ), 400
+        return jsonify({"error": f"file too large. Max allowed size is {MAX_FILE_SIZE // (1024*1024)} MB"}), 400
 
-    # Step 1: Is it a real photo?
+    # -------------------------
+    # Run validations
+    # -------------------------
     if not is_real_photo_strict(content):
-        return jsonify({"error": "Only real photographs are accepted. Please upload a genuine photo, not an illustration, drawing, or AI-generated image."}), 400
+        return jsonify({"error": "Only real photographs are accepted."}), 400
 
-    # Step 2: Is it blurry?
+    if not detect_glasses_from_image(content):
+        return jsonify({"error": "Person must not be wearing glasses"}), 400
+
+    # if not is_face_only(content):
+    #     return jsonify({"error": "Full body image detected. Please upload a passport-style face image only."}), 400
+
     if is_blurry(content):
-        return jsonify({"error": "Image is too blurry. Please upload a clear, sharp photo for better results."}), 400
+        return jsonify({"error": "Image is too blurry."}), 400
 
-    # Step 3: Does it contain a person?
     if not contains_person(content):
         return jsonify({"error": "Image must contain a human"}), 400
 
-    # Step 4: Does it contain more than one person?
     people_count = count_people(content)
     if people_count > 1:
-        return jsonify({"error": f"Multiple people detected ({people_count}). Please upload image with only one person"}), 400
+        return jsonify({"error": f"Multiple people detected ({people_count}). Please upload only one person"}), 400
 
-    # Step 5: Does it contain full body and is it front facing
-    # is_valid, message = is_full_body_front_facing(content)
-    # if not is_valid:
-    #     return jsonify({"error": message}), 400
-    
+    # -------------------------
+    # Crop face using YOLO
+    # -------------------------
+    cropped_faces = detect_and_crop_faces(content, padding_ratio=0.25)
+    if not cropped_faces:
+        return jsonify({"error": "No face detected to crop"}), 400
+
+    # Pick largest face if multiple
+    def get_area(face_img):
+        w, h = face_img.size
+        return w * h
+
+    largest_face = max(cropped_faces, key=get_area)
+
+    # Convert PIL image → bytes for DB
+    img_byte_arr = io.BytesIO()
+    largest_face.save(img_byte_arr, format="JPEG")
+    cropped_bytes = img_byte_arr.getvalue()
+
+    # -------------------------
+    # Store cropped face in DB
+    # -------------------------
     image_type = request.form.get("image_type")
 
     img = UserImage(
         filename=filename,
-        content_type=file.mimetype or "application/octet-stream",
-        size_bytes=len(content),
-        data=content,
+        content_type=file.mimetype or "image/jpeg",
+        size_bytes=len(cropped_bytes),
+        data=cropped_bytes,
         image_type=image_type
     )
     db.session.add(img)

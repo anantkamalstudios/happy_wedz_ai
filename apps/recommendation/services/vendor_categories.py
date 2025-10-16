@@ -1,19 +1,19 @@
 class VendorCategories:
     CATEGORIES = {
-        'photographer': {'display_name': 'Photography', 'description': 'Capture memories', 'icon': '📸', 'priority': 1},
-        'caterer': {'display_name': 'Catering', 'description': 'Delicious food', 'icon': '🍽️', 'priority': 2},
-        'decorator': {'display_name': 'Decorators', 'description': 'Beautiful setups', 'icon': '🎨', 'priority': 3},
-        'dj': {'display_name': 'DJ & Music', 'description': 'Keep the party going', 'icon': '🎵', 'priority': 4},
-        'videographer': {'display_name': 'Videography', 'description': 'Wedding films', 'icon': '🎥', 'priority': 5},
-        'makeup_artist': {'display_name': 'Makeup', 'description': 'Look your best', 'icon': '💄', 'priority': 6},
-        'mehendi_artist': {'display_name': 'Mehendi', 'description': 'Henna designs', 'icon': '🤚', 'priority': 7},
-        'band': {'display_name': 'Live Band', 'description': 'Live music', 'icon': '🎸', 'priority': 8},
-        'transport': {'display_name': 'Transport', 'description': 'Arrive in style', 'icon': '🚗', 'priority': 9},
-        'pandit': {'display_name': 'Pandits', 'description': 'Sacred guidance', 'icon': '🙏', 'priority': 10},
-        'invitation_designer': {'display_name': 'Invitations', 'description': 'Wedding invites', 'icon': '💌', 'priority': 11},
-        'jewellery': {'display_name': 'Jewellery', 'description': 'Wedding jewellery', 'icon': '💎', 'priority': 12},
-        'choreographer': {'display_name': 'Choreographers', 'description': 'Dance prep', 'icon': '💃', 'priority': 13},
-        'other': {'display_name': 'Other', 'description': 'Misc services', 'icon': '⭐', 'priority': 99}
+        'photographer': {'display_name': 'Photography', 'description': 'Capture memories', 'priority': 1},
+        'caterer': {'display_name': 'Catering', 'description': 'Delicious food', 'priority': 2},
+        'decorator': {'display_name': 'Decorators', 'description': 'Beautiful setups', 'priority': 3},
+        'dj': {'display_name': 'DJ & Music', 'description': 'Keep the party going', 'priority': 4},
+        'videographer': {'display_name': 'Videography', 'description': 'Wedding films', 'priority': 5},
+        'makeup_artist': {'display_name': 'Makeup', 'description': 'Look your best', 'priority': 6},
+        'mehendi_artist': {'display_name': 'Mehendi', 'description': 'Henna designs', 'priority': 7},
+        'band': {'display_name': 'Live Band', 'description': 'Live music', 'priority': 8},
+        'transport': {'display_name': 'Transport', 'description': 'Arrive in style', 'priority': 9},
+        'pandit': {'display_name': 'Pandits', 'description': 'Sacred guidance', 'priority': 10},
+        'invitation_designer': {'display_name': 'Invitations', 'description': 'Wedding invites', 'priority': 11},
+        'jewellery': {'display_name': 'Jewellery', 'description': 'Wedding jewellery', 'priority': 12},
+        'choreographer': {'display_name': 'Choreographers', 'description': 'Dance prep', 'priority': 13},
+        'other': {'display_name': 'Other', 'description': 'Misc services', 'priority': 99}
     }
 
     TYPE_MAP = {
