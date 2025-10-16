@@ -3,7 +3,7 @@ from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
 import io
 from apps.image_processing.models.makeup_image_model import (
-    db, UserImage, ImageType, CategoryEnum, Product, UserMakeupResultImage, ProductDetailedEnum
+    db, UserImage, ImageType, CategoryEnum, Product, UserMakeupResultImage
 )
 from ultralytics import YOLO
 import mediapipe as mp
