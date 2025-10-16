@@ -1,32 +1,20 @@
 from datetime import datetime
 from click import DateTime
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, ForeignKey, JSON, Boolean, CheckConstraint
+from sqlalchemy import Column, Float, Integer, String, Text, TIMESTAMP, ForeignKey, JSON, Boolean, CheckConstraint
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
-class Users(Base):
-    __tablename__ = 'users'
+class Usersfetch(Base):
+    __tablename__ = 'usersfetch'
 
     id = Column(Integer, primary_key=True, nullable=False)
-    name = Column(String, nullable=False)
+    name = Column(String, )
     email = Column(String, nullable=False)
-    password = Column(String, )
-    phone = Column(String, )
-    role = Column(String, )
-    wedding_venue = Column(String, )
-    country = Column(String, )
+    password = Column(String, nullable=False)
     city = Column(String, )
-    wedding_date = Column(DateTime, )
-    google_id = Column(String, )
-    otp = Column(String, )
-    otp_expire = Column(DateTime, )
-    profile_image = Column(String, )
-    cover_image = Column(String, )
-    created_at = Column(DateTime, nullable=False)
-    updated_at = Column(DateTime, nullable=False)
-    password_reset_token = Column(String, )
-    password_reset_expires = Column(String, )
+    overall_budget = Column(Float, )
+    created_at = Column(DateTime, )
 class EmailTemplate(Base):
     __tablename__ = "email_templates"
     id = Column(Integer, primary_key=True)
