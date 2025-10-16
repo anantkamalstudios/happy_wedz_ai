@@ -10,11 +10,11 @@ class Config:
     # Database
     DB_HOST = os.getenv("DB_HOST", "localhost")
     DB_PORT = int(os.getenv("DB_PORT", 5432))
-    DB_NAME = os.getenv("DB_NAME", "weddingdb")
+    DB_NAME = os.getenv("DB_NAME", "emailautomation")
     DB_USER = os.getenv("DB_USER", "postgres")
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
+    DB_PASSWORD = os.getenv("DB_PASSWORD", "root")
 
-    # Mail (Gmail SMTP)
+    # Gmail SMTP
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
     MAIL_USERNAME = os.getenv("MAIL_USERNAME")

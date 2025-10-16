@@ -25,5 +25,14 @@ def trigger_email():
     trigger.schedule_email(user_id, template_id, context)
     return jsonify({"status": "queued"})
 
+@app.route("/login", methods=["POST"])
+def login():
+    user_id = request.json.get("user_id")
+    tracker.log_activity(user_id, "login")
+    return jsonify({"message": "User logged in, daily email scheduled."})
+
+
+
+
 if __name__ == "__main__":
     app.run(debug=True)

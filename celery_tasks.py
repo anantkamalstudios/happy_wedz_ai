@@ -12,27 +12,12 @@ celery.config_from_object("celeryconfig")
 
 logger = logging.getLogger(__name__)
 
-EMAIL_TEMPLATES = {
-    "welcome": "welcome_template.html",
-    "wishlist": "wishlist_template.html",
-    "todo": "todo_template.html",
-    "vendor_recommendation": "vendor_template.html",
-    "budget_update": "budget.html",
-    "budget_planner": "budget_planner/feature_intro.html",
-    "guestlist": "guestlist/reminder.html",
-}
-
-
 @celery.task(bind=True, max_retries=3)
 def process_email_queue(self, batch_size: int = 50):
-    """
-    Process pending emails from the queue using SQLAlchemy ORM.
-    """
     try:
         session: Session = SessionLocal()
         sender = EmailSender(session)
 
-        # Fetch pending emails using ORM
         emails = (
             session.query(EmailQueue)
             .join(User, EmailQueue.user_id == User.id)
@@ -42,7 +27,7 @@ def process_email_queue(self, batch_size: int = 50):
                 EmailQueue.scheduled_at <= func.now(),
                 (UserEmailPreferences.unsubscribed == False) | (UserEmailPreferences.unsubscribed.is_(None))
             )
-            .order_by(EmailQueue.priority.desc(), EmailQueue.scheduled_at.asc())
+            .order_by(EmailQueue.scheduled_at.asc())
             .limit(batch_size)
             .all()
         )
@@ -53,38 +38,25 @@ def process_email_queue(self, batch_size: int = 50):
 
         for eq in emails:
             try:
-                template_file = EMAIL_TEMPLATES.get(eq.feature or eq.email_type)
-                if not template_file:
-                    raise ValueError(f"No template found for feature/email_type: {eq.feature}/{eq.email_type}")
-
-                context = {
-                    "name": eq.user.name,
-                    "city": getattr(eq, "city", None),
-                    **(eq.personalization_data or {})
-                }
+                template_name = eq.template.template_file
+                context = eq.context or {}
 
                 success = sender.send_email(
                     to_email=eq.user.email,
-                    subject=f"{eq.feature.capitalize()} Update" if eq.feature else "Update",
-                    template_name=template_file,
+                    subject=eq.template.subject,
+                    template_name=template_name,
                     context=context
                 )
 
-                if not success:
-                    raise Exception("Email sending failed")
-
-                eq.status = "sent"
+                eq.status = "sent" if success else "failed"
                 session.commit()
-                logger.info(f"Email sent successfully to {eq.user.email} (Queue ID: {eq.id})")
-
             except Exception as e:
                 eq.status = "failed"
                 session.commit()
-                logger.error(f"Failed to send email to {eq.user.email} (Queue ID: {eq.id}): {e}")
-
+                logger.error(f"Failed to send email (Queue ID {eq.id}): {e}")
     except Exception as e:
-        logger.error(f"Error in process_email_queue task: {e}")
         session.rollback()
+        logger.error(f"Error in process_email_queue task: {e}")
         raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
     finally:
         session.close()

@@ -1,0 +1,2 @@
+- [ ] Update config.py: Change DB_NAME default to "emailautomation" and DB_PASSWORD to "root"
+- [ ] Verify the changes in config.py
