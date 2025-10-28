@@ -1,0 +1,101 @@
+{
+  "info": {
+    "name": "Try-On API - Local",
+    "_postman_id": "tryon-local-collection",
+    "description": "Collection to test the local Try-On Flask server (POST /tryon and GET /download/:filename)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Try-On (POST multipart/form-data)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "person_image",
+              "type": "file",
+              "src": "{{person_image_path}}",
+              "description": "Path to local person image file (png|jpg|jpeg|webp)"
+            },
+            {
+              "key": "garment_image",
+              "type": "file",
+              "src": "{{garment_image_path}}",
+              "description": "Path to local garment image file (png|jpg|jpeg|webp)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/tryon",
+          "host": ["{{base_url}}"],
+          "path": ["tryon"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Tests: store result_url and extracted filename into environment variables",
+              "pm.test('Status is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "try {",
+              "    var json = pm.response.json();",
+              "    if (json && json.result_url) {",
+              "        pm.environment.set('result_url', json.result_url);",
+              "        var m = json.result_url.match(/\\/download\\/(.+)$/);",
+              "        if (m && m[1]) pm.environment.set('result_filename', m[1]);",
+              "    }",
+              "} catch (e) {",
+              "    // ignore JSON parse errors",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Download result (GET)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/download/{{result_filename}}",
+          "host": ["{{base_url}}"],
+          "path": ["download", "{{result_filename}}"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "person_image_path",
+      "value": "<ABSOLUTE_PATH_TO_PERSON_IMAGE>",
+      "type": "string"
+    },
+    {
+      "key": "garment_image_path",
+      "value": "<ABSOLUTE_PATH_TO_GARMENT_IMAGE>",
+      "type": "string"
+    },
+    {
+      "key": "result_filename",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "result_url",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
