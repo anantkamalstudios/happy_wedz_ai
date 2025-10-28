@@ -568,25 +568,38 @@ def apply_blush(original_img, landmarks, color="#ff6666", intensity=0.5, radius=
     left_eye = landmarks["left_eye"]
     right_eye = landmarks["right_eye"]
 
-    left_cheek_x = int((chin[3][0] + left_eye[0][0]) / 2)
-    left_cheek_y = int((chin[3][1] + left_eye[0][1]) / 2)
-    left_cheek = (left_cheek_x, left_cheek_y)
+    left_cheek = (
+        int((chin[3][0] + left_eye[0][0]) / 2),
+        int((chin[3][1] + left_eye[0][1]) / 2),
+    )
+    right_cheek = (
+        int((chin[13][0] + right_eye[3][0]) / 2),
+        int((chin[13][1] + right_eye[3][1]) / 2),
+    )
 
-    right_cheek_x = int((chin[13][0] + right_eye[3][0]) / 2)
-    right_cheek_y = int((chin[13][1] + right_eye[3][1]) / 2)
-    right_cheek = (right_cheek_x, right_cheek_y)
-
+    # Step 1: draw blush circles
     cv2.circle(blush_mask, left_cheek, radius, 255, -1)
     cv2.circle(blush_mask, right_cheek, radius, 255, -1)
 
-    mask_blur = cv2.GaussianBlur(blush_mask, (101, 101), 0).astype(np.float32) / 255.0
+    # Step 2: create a face polygon mask (to restrict blush only to skin area)
+    face_mask = np.zeros_like(blush_mask)
+    face_contour = np.array(chin + [chin[-1]])  # ensure closed contour
+    cv2.fillPoly(face_mask, [face_contour], 255)
+
+    # Step 3: restrict blush mask inside face mask
+    restricted_mask = cv2.bitwise_and(blush_mask, face_mask)
+
+    # Step 4: blur and apply overlay
+    mask_blur = cv2.GaussianBlur(restricted_mask, (81, 81), 0).astype(np.float32) / 255.0
     mask_3 = cv2.merge([mask_blur] * 3)
 
     color_bgr = np.array(hex_to_bgr(color), dtype=np.uint8)
-    overlay = np.full_like(original_img, color_bgr, dtype=np.uint8)
+    overlay = np.full_like(original_img, color_bgr)
     alpha = np.clip(intensity, 0.0, 1.0)
 
-    return cv2.convertScaleAbs(original_img * (1 - mask_3 * alpha) + overlay * (mask_3 * alpha))
+    result = cv2.convertScaleAbs(original_img * (1 - mask_3 * alpha) + overlay * (mask_3 * alpha))
+    return result
+
 
 
 def hex_to_bgrs(hex_color: str):
@@ -950,6 +963,7 @@ def apply_lenses_advanced_fixed(image, lens_color="#1E90FF", lens_intensity=0.7,
 
 
 def apply_contact_lenses(image, lens_color="#1E90FF", lens_intensity=0.7, lens_radius_scale=1.2, add_reflection=True):
+    print(lens_color)
     return apply_lenses_advanced_fixed(
         image,
         lens_color=lens_color,
@@ -1483,24 +1497,24 @@ def apply_contour(img_bgr, intensity=0.2, color_hex="#644632"):
     mask_draw.arc(bbox, start=0, end=180, fill=255, width=line_width)
     
     # Forehead bands
-    forehead_y = int(eyebrow_center.y * h) - int(h * 0.10)
-    forehead_band_width = int(nose_width * 0.9)
-    forehead_band_height = int(nose_width * 0.7)
-    gap_between_bands = int(nose_width * 0.6)
-    tilt_angle = -30
+    # forehead_y = int(eyebrow_center.y * h) - int(h * 0.10)
+    # forehead_band_width = int(nose_width * 0.9)
+    # forehead_band_height = int(nose_width * 0.7)
+    # gap_between_bands = int(nose_width * 0.6)
+    # tilt_angle = -30
     
-    def draw_band(x_start, tilt):
-        band_mask = Image.new("L", img.size, 0)
-        band_draw = ImageDraw.Draw(band_mask)
-        band_box = [(x_start, forehead_y),
-                    (x_start + forehead_band_width, forehead_y + forehead_band_height)]
-        band_draw.rounded_rectangle(band_box, radius=forehead_band_height//2, fill=255)
-        return band_mask.rotate(tilt, center=(x_start + forehead_band_width//2, forehead_y), fillcolor=0)
+    # def draw_band(x_start, tilt):
+    #     band_mask = Image.new("L", img.size, 0)
+    #     band_draw = ImageDraw.Draw(band_mask)
+    #     band_box = [(x_start, forehead_y),
+    #                 (x_start + forehead_band_width, forehead_y + forehead_band_height)]
+    #     band_draw.rounded_rectangle(band_box, radius=forehead_band_height//2, fill=255)
+    #     return band_mask.rotate(tilt, center=(x_start + forehead_band_width//2, forehead_y), fillcolor=0)
     
-    left_band = draw_band(x_center - gap_between_bands - forehead_band_width, -tilt_angle)
-    right_band = draw_band(x_center + gap_between_bands, tilt_angle)
-    mask = ImageChops.add(mask, left_band)
-    mask = ImageChops.add(mask, right_band)
+    # left_band = draw_band(x_center - gap_between_bands - forehead_band_width, -tilt_angle)
+    # right_band = draw_band(x_center + gap_between_bands, tilt_angle)
+    # mask = ImageChops.add(mask, left_band)
+    # mask = ImageChops.add(mask, right_band)
     
     # --- Jawline contour ---
     left_jaw_indices = [234, 93, 132, 58, 172, 136, 150, 149, 176, 148]
@@ -1572,3 +1586,85 @@ def apply_contour(img_bgr, intensity=0.2, color_hex="#644632"):
     
     img_final = Image.alpha_composite(img_rgba, overlay).convert("RGB")
     return cv2.cvtColor(np.array(img_final), cv2.COLOR_RGB2BGR)
+
+
+def apply_eyeliner(image_bgr, intensity=0.8, color_hex="#000000"):
+    # Convert HEX → BGR
+    color_hex = color_hex.lstrip("#")
+    r, g, b = tuple(int(color_hex[i:i+2], 16) for i in (0, 2, 4))
+    eyeliner_color = (b, g, r)
+
+    h, w, _ = image_bgr.shape
+    mp_face_mesh = mp.solutions.face_mesh
+    face_mesh = mp_face_mesh.FaceMesh(
+        static_image_mode=True,
+        max_num_faces=1,
+        refine_landmarks=True
+    )
+
+    # Convert image for Mediapipe
+    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+    results = face_mesh.process(image_rgb)
+
+    if not results.multi_face_landmarks:
+        return image_bgr  # no face detected → return original
+
+    for face_landmarks in results.multi_face_landmarks:
+        overlay = image_bgr.copy()
+
+        left_eye_upper = [33, 246, 161, 160, 159, 158, 157, 173, 133]
+        right_eye_upper = [263, 466, 388, 387, 386, 385, 384, 398, 362]
+
+        for eye_idxs, eye_side in [(left_eye_upper, "left"), (right_eye_upper, "right")]:
+            pts = []
+            for idx in eye_idxs:
+                lm = face_landmarks.landmark[idx]
+                pts.append((int(lm.x * w), int(lm.y * h)))
+            pts = np.array(pts, dtype=np.int32)
+
+            outer_corner_idx = 0
+            inner_corner_idx = -1
+            outer_corner = pts[outer_corner_idx]
+            inner_corner = pts[inner_corner_idx]
+
+            # Upper eyeliner stroke
+            for i in range(len(pts) - 1):
+                progress = i / (len(pts) - 1)
+                if eye_side == "left":
+                    thickness = int(2 + (1 - progress) * 4)
+                else:
+                    thickness = int(2 + (1 - progress) * 4)
+                cv2.line(
+                    overlay, tuple(pts[i]), tuple(pts[i + 1]),
+                    eyeliner_color, int(thickness * intensity * 2), cv2.LINE_AA
+                )
+
+            # Winged tip
+            eye_vector = np.array(outer_corner) - np.array(inner_corner)
+            eye_angle = np.arctan2(eye_vector[1], eye_vector[0])
+
+            if eye_side == "left":
+                wing_angle = eye_angle - np.deg2rad(15)
+            else:
+                wing_angle = eye_angle + np.deg2rad(15)
+
+            eye_width = np.linalg.norm(eye_vector)
+            wing_length = int(eye_width * 0.25)
+            wing_tip = (
+                int(outer_corner[0] + wing_length * np.cos(wing_angle)),
+                int(outer_corner[1] + wing_length * np.sin(wing_angle))
+            )
+
+            connection_point = (
+                int(outer_corner[0] + 3 * np.cos(eye_angle)),
+                int(outer_corner[1] + 6 + 3 * np.sin(eye_angle))
+            )
+
+            wing_pts = np.array([outer_corner, wing_tip, connection_point], dtype=np.int32)
+            cv2.fillPoly(overlay, [wing_pts], eyeliner_color)
+            cv2.line(overlay, outer_corner, wing_tip, eyeliner_color, 3, cv2.LINE_AA)
+
+        # Blend overlay
+        image_bgr = cv2.addWeighted(overlay, 0.75, image_bgr, 1 - 0.75, 0)
+
+    return image_bgr

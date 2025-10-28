@@ -1,0 +1,32 @@
+from flask import Flask, request, jsonify
+from apps.email_automation.core.activity_tracker import ActivityTracker
+from apps.email_automation.core.email_trigger import EmailTriggerEngine
+from db import get_db
+
+app = Flask(__name__)
+tracker = ActivityTracker()
+trigger = EmailTriggerEngine()
+
+@app.route("/api/activity", methods=["POST"])
+def track_activity():
+    data = request.json
+    user_id = data["user_id"]
+    activity_type = data["activity_type"]
+    metadata = data.get("metadata", {})
+    tracker.log_activity(user_id, activity_type, metadata)
+    return jsonify({"status": "ok"})
+
+# @app.route("/api/trigger-email", methods=["POST"])
+# def trigger_email():
+#     data = request.json
+#     user_id = data["user_id"]
+#     template_id = data["template_id"]
+#     context = data.get("context", {})
+#     trigger.schedule_email(user_id, template_id, context)
+#     return jsonify({"status": "queued"})
+
+# @app.route("/login", methods=["POST"])
+# def login():
+#     user_id = request.json.get("user_id")
+#     tracker.log_activity(user_id, "login")
+#     return jsonify({"message": "User logged in, daily email scheduled."})

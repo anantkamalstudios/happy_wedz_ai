@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wedding Venues Template</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: #fff;
+      color: #4a004a;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 20px auto;
+      background: #E835801A;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    /* .hero {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .hero img {
+      width: 100%;
+      border-radius: 10px;
+    } */
+
+    .hero {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.hero img {
+  width: 100%;
+  display: block;
+  border-radius: 10px;
+}
+
+.hero-text {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #fff;
+  padding: 0 20px;
+}
+
+.hero-logo {
+  width: 60px; /* smaller than h2 */
+  height: auto;
+  margin-bottom: 15px;
+}
+
+.hero-text h2 {
+  font-size: 28px;
+   color: #fff;
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+.hero-text p {
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+    h2 {
+      color: #C31162;
+      text-align: center;
+      font-weight: 600;
+      margin-top: 10px;
+      font: Briem Hand;
+    }
+
+    p {
+      /* color: #fff; */
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .venues {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+
+
+
+    .section {
+      background: #fff;
+      color: #4a004a;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .section h3 {
+      font-family: 'Dancing Script', cursive;
+      font-size: 22px;
+    }
+
+    .btn {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: #f7328f;
+      color: #fff;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-radius: 10px;
+  padding: 30px 20px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.footer-left {
+  flex: 1;
+  min-width: 300px;
+}
+
+.footer-left p {
+  color: #4a004a;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.app-buttons img {
+  height: 40px;
+  margin-right: 10px;
+}
+
+.footer-left small {
+  display: block;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+.footer-left a {
+  /* color: #f7328f; */
+  text-decoration: none;
+}
+
+.social-icons {
+  margin-top: 15px;
+}
+
+.social-icons i {
+  font-size: 18px;
+  color: rgb(158, 157, 157);
+  margin-right: 13px;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.social-icons i:hover {
+  color: #4a004a;
+}
+
+.footer-right img {
+  height: 180px;
+  width: auto;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    flex-direction: column-reverse;
+    text-align: center;
+  }
+
+  .footer-right img {
+    height: 150px;
+    margin-bottom: 15px;
+  }
+
+  .social-icons i {
+    font-size: 20px;
+  }
+}
+
+
+    @media (max-width: 768px) {
+      .venue-card {
+        width: 100%;
+      }
+    }
+  </style>
+
+  <style>
+
+
+  .venues-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding: 40px 0;
+    flex-wrap: wrap;
+  }
+
+
+
+
+  .venue-card {
+    position: relative;
+      width: 31%;
+    /* height: 320px; */
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease;
+
+         
+      background: #fff;
+  }
+
+  .venue-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .venue-card img {
+       width: 100%;
+      height: 180px;
+    object-fit: cover;
+  }
+
+  .venue-title {
+    position: absolute;
+    top: 15px;
+    left: -8px;
+    background-color: #d63384;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 15px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+    @media (max-width: 992px) {
+    .venues-section {
+      gap: 15px;
+      padding: 30px 10px;
+    }
+    .venue-card {
+      width: 280px;
+      height: 300px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .venues-section {
+      flex-direction: column;
+      align-items: center;
+    }
+    .venue-card {
+      width: 90%;
+      height: 280px;
+    }
+    .venue-title {
+      font-size: 13px;
+      padding: 7px 10px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .venue-card {
+      width: 95%;
+      height: 240px;
+    }
+    .venue-title {
+      font-size: 12px;
+      padding: 6px 8px;
+    }
+  }
+
+
+  .venue2 {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 25px;
+  padding: 50px 5%;
+  background-color: #fff5f8;
+  flex-wrap: wrap;
+  font-family: "Poppins", sans-serif;
+}
+
+.venue2-card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 300px;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.venue2-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.venue2-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.venue2-card h4 {
+  margin: 15px 0 5px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.venue2-card p {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 15px;
+  line-height: 1.4;
+}
+
+/* ---------- Responsive Design ---------- */
+@media (max-width: 992px) {
+  .venue2 {
+    gap: 20px;
+  }
+  .venue2-card {
+    width: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .venue2 {
+    flex-direction: column;
+    align-items: center;
+  }
+  .venue2-card {
+    width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .venue2-card img {
+    height: 180px;
+  }
+  .venue2-card h4 {
+    font-size: 16px;
+  }
+  .venue2-card p {
+    font-size: 13px;
+  }
+}
+</style>
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+/>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Hero Image -->
+    <!-- <div class="hero">
+      <img src="image/templete1_top.jpg" alt="Wedding Venue">
+    </div> -->
+
+    <div class="hero">
+  <img src="image/templete1_top.jpg" alt="Wedding Venue">
+  <div class="hero-text">
+    <img src="image/happy_wed_logo.png" alt="Wedding Logo" class="hero-logo" style="width: 187px;
+    padding-left: 36px;">
+    <h2>Book Your Vendor</h2>
+    <p>Discover top-rated wedding vendors with countless reliable reviews.</p>
+  </div>
+</div>
+
+    <h2>Save Your Favorite Venues & Vendors 💖</h2>
+    <p style="color:black">What are the services the venue can offer? It’s a good idea to get a detailed list with pricing to make the best decisions going forward. If you prefer your own photographer or caterer to the one the venue provides, be sure to ask if you can bring your own vendors.</p>
+
+    <!-- Venue Images Section -->
+    <!-- <div class="venues">
+      <div class="venue-card">
+        <img src="image/vanue1.png" alt="Venue 1">
+        <h4>Wedding Venues in Kerala</h4>
+      </div>
+      <div class="venue-card">
+        <img src="image/vanue2.jpg" alt="Venue 2">
+        <h4>Wedding Venues in Goa</h4>
+      </div>
+      <div class="venue-card">
+        <img src="image/vanue3.jpg" alt="Venue 3">
+        <h4>Wedding Venues in Delhi</h4>
+      </div>
+    </div> -->
+
+    <section class="venues-section">
+  <div class="venue-card">
+    <img src="image/vanue1.png" alt="Venue in your city">
+    <div class="venue-title">Venues in your city</div>
+  </div>
+
+  <div class="venue-card">
+    <img src="image/vanue2.jpg" alt="Wedding Venues in Kerala">
+    <div class="venue-title">Wedding Venues in Kerala</div>
+  </div>
+
+  <div class="venue-card">
+    <img src="image/vanue3.jpg" alt="Wedding Venues in Goa">
+    <div class="venue-title">Wedding Venues in Goa</div>
+  </div>
+</section>
+
+    <!-- Punjab Section -->
+    <div class="section">
+      <h3>Wedding Venues in Punjab</h3>
+      <a href="#" class="btn">Find Your Venues Now</a>
+    </div>
+
+    <p style="text-align:center;margin-top:20px;">
+It's a good idea to ask about any specific rules the venue has, such as noise-reduction, curfews, or protocols that your vendors should know about. What spaces do vendors have access to?    </p>
+
+    <!-- <div class="venues">
+      <div class="venue-card">
+        <img src="image/templete1_card.jpg" alt="Fort Jadhavgadh">
+        <h4>Fort Jadhavgadh, Pune</h4>
+        <p>Saswad<br>₹ 2,899 per plate</p>
+      </div>
+
+             <div class="venue-card">
+        <img src="image/templete1_card.jpg" alt="Fort Jadhavgadh">
+        <h4>Fort Jadhavgadh, Pune</h4>
+        <p>Saswad<br>₹ 2,899 per plate</p>
+      </div>
+      <div class="venue-card">
+        <img src="image/templete1_card.jpg" alt="Fort Jadhavgadh">
+        <h4>Fort Jadhavgadh, Pune</h4>
+        <p>Saswad<br>₹ 2,899 per plate</p>
+      </div>
+    </div> -->
+    <div class="venue2">
+  <div class="venue2-card">
+    <img src="image/templete1_card.jpg" alt="Fort Jadhavgadh">
+    <h4>Fort Jadhavgadh, Pune</h4>
+    <p>Saswad<br>₹ 2,899 per plate</p>
+  </div>
+
+  <div class="venue2-card">
+    <img src="image/templete1_card.jpg" alt="Fort Jadhavgadh">
+    <h4>Fort Jadhavgadh, Pune</h4>
+    <p>Saswad<br>₹ 2,899 per plate</p>
+  </div>
+
+  <!-- <div class="venue2-card">
+    <img src="image/templete1_card.jpg" alt="Fort Jadhavgadh">
+    <h4>Fort Jadhavgadh, Pune</h4>
+    <p>Saswad<br>₹ 2,899 per plate</p>
+  </div> -->
+</div>
+
+
+    <!-- Footer -->
+    <div class="footer">
+  <div class="footer-left">
+    <p>Download the app</p>
+    <div class="app-buttons">
+      <img src="image/google_play.png" alt="Google Play">
+      <img src="image/app_store.png" alt="App Store">
+    </div>
+
+    <small>
+      Have questions or concerns? Reach out to us at
+      <a href="mailto:xxx@email.com">xxx@email.com</a><br>
+      If you no longer wish to receive emails from Sublima,
+      <a href="#">unsubscribe here</a>.<br>
+      Copyright © 2024 Sublima. All rights reserved.
+    </small>
+
+    <div class="social-icons">
+      <!-- <i class="fa-solid fa-location-dot"></i>
+      <i class="fa-brands fa-facebook-f"></i>
+      <i class="fa-brands fa-instagram"></i>
+      <i class="fa-brands fa-linkedin-in"></i> -->
+       <i class="fa-brands fa-facebook-f"></i>
+      <i class="fa-brands fa-linkedin-in"></i>
+      <i class="fa-brands fa-twitter"></i>
+      <i class="fa-brands fa-instagram"></i>
+    </div>
+  </div>
+
+  <div class="footer-right">
+    <img src="image/Devices.png" alt="Device" />
+  </div>
+</div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,10 +1,8 @@
-from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
 from db import db
+from datetime import datetime
 
-
-class UserFetch(db.Model):
-    __tablename__ = "usersfetch"
+class User(db.Model):
+    __tablename__ = 'userfetch'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     email = db.Column(db.String(100), unique=True, nullable=False)

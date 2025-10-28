@@ -1,11 +1,16 @@
 from flask import Blueprint
-from apps.recommendation.apis.interactions import interactions_bp
-from apps.recommendation.apis.preferences import preferences_bp
-from apps.recommendation.apis.recommendations import recommendations_bp
-from apps.recommendation.apis.trending import trending_bp
+from .interactions import interactions_bp
+from .recommendations import recommendation_bp
+
+api_bp = Blueprint('api', __name__)
+
+api_bp.register_blueprint(interactions_bp, url_prefix='/interactions')
+api_bp.register_blueprint(recommendation_bp, url_prefix='/recommendations')
+
 
 def register_recommendation_routes(app):
-    app.register_blueprint(interactions_bp)
-    app.register_blueprint(recommendations_bp)
-    app.register_blueprint(trending_bp)
-    app.register_blueprint(preferences_bp)
+	"""Register recommendation API blueprint on the Flask app.
+
+	This mirrors the pattern used by `apps.image_processing.apis.register_image_processing_routes`.
+	"""
+	app.register_blueprint(api_bp, url_prefix='/api/recommendation')

@@ -20,3 +20,8 @@ psql - 17.6
 conda - 25.5.1
 
 # API documentation link
+
+
+# Commands to run email automation code (run this commands with python run.py file, so basically 3 terminals will be running)
+celery -A apps.email_automation.core.celery_tasks worker --loglevel=info --pool=solo
+celery -A apps.email_automation.core.celery_tasks beat --loglevel=info

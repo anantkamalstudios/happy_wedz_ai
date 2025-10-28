@@ -1,99 +1,79 @@
-import pandas as pd
-from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import create_engine
-from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import sessionmaker
-from apps.recommendation.services.vendor_categories import VendorCategories
-from dotenv import load_dotenv
-import os
+from collections import defaultdict, Counter
+from datetime import datetime, timedelta
+from ..models.interaction import Venue, Vendor
+from .weights import RecommendationWeights
+from .vendor_categories import VendorCategories
 
-load_dotenv()
-
-# --- DB connection & ORM reflection ---
-engine = create_engine(os.getenv("DATABASE_URL"))
-Base = automap_base()
-Base.prepare(engine, reflect=True)
-
-# ORM classes for tables
-Venue = Base.classes.venues_fetch
-Vendor = Base.classes.vendors_fetch
-UserInteraction = Base.classes.user_interactions
-
-# Session
-Session = sessionmaker(bind=engine)
-session = Session()
-
-# --- Global caches ---
 venues_cache = {}
 vendors_cache = {}
 vendor_categories_cache = defaultdict(list)
 user_interaction_cache = defaultdict(lambda: defaultdict(list))
 
-def reload_data():
-    """Load and cache data for recommendations"""
+def reload_data(db):
+    """Load and cache data for fast recommendations"""
     global venues_cache, vendors_cache, vendor_categories_cache, user_interaction_cache
 
-    # print("🔄 Reloading data from database...")
+    try:
+        # Test database connection
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        
 
-    # --- Load venues ---
-    venues_cache = {}
-    venues = session.query(Venue).all()
-    for venue in venues:
-        venues_cache[venue.id] = {
-            'id': venue.id,
-            'name': getattr(venue, 'name', ''),
-            'city': getattr(venue, 'city', ''),
-            'capacity': getattr(venue, 'capacity', 0) or 0,
-            'price': getattr(venue, 'price', 0) or 0,
-            'rating': getattr(venue, 'rating', 0) or 0,
-            'type': 'venue'
-        }
+        # Load venues (all columns)
+        venues_query = Venue.query.all()
+        venues_cache.clear()
+        for venue in venues_query:
+            venues_cache[venue.id] = venue.to_dict()
 
-    # --- Load vendors ---
-    vendors_cache = {}
-    vendor_categories_cache = defaultdict(list)
-    vendors = session.query(Vendor).all()
-    for vendor in vendors:
-        normalized = VendorCategories.normalize_vendor_type(getattr(vendor, 'type', ''))
-        category_info = VendorCategories.get_category_display_info(normalized)
+        # Load vendors (only required columns to save memory)
+        from sqlalchemy.orm import load_only
+        vendors_query = Vendor.query.options(
+            load_only(Vendor.id, Vendor.name, Vendor.city, Vendor.type, Vendor.rating, Vendor.image_type)
+        ).all()
+        vendors_cache.clear()
+        vendor_categories_cache.clear()
 
-        vendor_data = {
-            'id': vendor.id,
-            'name': getattr(vendor, 'name', ''),
-            'city': getattr(vendor, 'city', ''),
-            'type': normalized,
-            'original_type': getattr(vendor, 'type', ''),
-            'category': normalized,
-            'category_display': category_info['display_name'],
-            'rating': getattr(vendor, 'rating', 0) or 0,
-            'item_type': 'vendor'
-        }
-        vendors_cache[vendor.id] = vendor_data
-        vendor_categories_cache[normalized].append(vendor_data)
+        unmapped_types = set()
+        for vendor in vendors_query:
+            vendor_data = vendor.to_dict()
+            vendors_cache[vendor.id] = vendor_data
+            vendor_categories_cache[vendor_data['category']].append(vendor_data)
 
-    # --- Load recent interactions (last 90 days) ---
-    cutoff_date = datetime.utcnow() - timedelta(days=90)
-    interactions = (
-        session.query(UserInteraction)
-        .filter(UserInteraction.timestamp >= cutoff_date)
-        .order_by(UserInteraction.timestamp.desc())
-        .all()
-    )
+            if vendor_data['category'] == 'other':
+                unmapped_types.add(vendor.type)
 
-    user_interaction_cache = defaultdict(lambda: defaultdict(list))
-    for i in interactions:
-        user_interaction_cache[i.user_id]['interactions'].append({
-            'item_id': i.item_id,
-            'item_type': i.item_type,
-            'interaction_type': i.interaction_type,
-            'timestamp': i.timestamp,
-            'days_ago': (datetime.now(timezone.utc) - i.timestamp).days
-        })
+        if unmapped_types:
+            print(f"⚠️ Unmapped vendor types (mapped to 'other'): {sorted(unmapped_types)}")
 
-    # print(f"✅ Loaded {len(venues_cache)} venues, {len(vendors_cache)} vendors")
-    # print(f"✅ Vendor categories: {list(vendor_categories_cache.keys())}")
-    # print(f"✅ Cached {len(interactions)} interactions")
+        # Sort vendors in each category by rating
+        for category in vendor_categories_cache:
+            vendor_categories_cache[category].sort(key=lambda x: x['rating'], reverse=True)
 
-# --- Initialize at startup ---
-reload_data()
+        # Load recent interactions (last 90 days)
+        cutoff_date = datetime.utcnow() - timedelta(days=90)
+        from ..models import UserInteraction
+        interactions_query = UserInteraction.query.filter(
+            UserInteraction.timestamp >= cutoff_date
+        ).order_by(UserInteraction.timestamp.desc()).all()
+
+        # Build user interaction profiles
+        user_interaction_cache.clear()
+        for interaction in interactions_query:
+            user_id = interaction.user_id
+            user_interaction_cache[user_id]['interactions'].append({
+                'item_id': interaction.item_id,
+                'item_type': interaction.item_type,
+                'interaction_type': interaction.interaction_type,
+                'timestamp': interaction.timestamp,
+                'days_ago': (datetime.utcnow() - interaction.timestamp).days
+            })
+
+        print(f"✅ Loaded {len(venues_cache)} venues, {len(vendors_cache)} vendors")
+        print(f"✅ Vendor categories: {list(vendor_categories_cache.keys())}")
+        print(f"✅ Processed {len(interactions_query)} recent interactions for {len(user_interaction_cache)} users")
+
+    except Exception as e:
+        import traceback
+        print(f"⚠️ Database connection error: {e}")
+        traceback.print_exc()
+        print("Using empty caches for now...")

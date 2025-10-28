@@ -8,6 +8,9 @@ from db import db
 class ImageType(enum.Enum):
     ORIGINAL = "ORIGINAL"
     RESULT = "RESULT"
+    TRYON_PERSON = "TRYON_PERSON"
+    TRYON_GARMENT = "TRYON_GARMENT"
+    TRYON_RESULT = "TRYON_RESULT"
 
 
 class UserImage(db.Model):
