@@ -6,7 +6,7 @@ from apps.image_processing.models.makeup_image_model import (
     db, UserImage, ImageType, CategoryEnum, Product, UserMakeupResultImage, ProductDetailedCategory
 )
 from apps.image_processing.core.makeup_image_core import (
-    allowed_file, count_people, is_real_photo_strict, is_blurry, contains_person, is_full_body_front_facing, apply_lipstick, apply_blush, apply_eyeshadow, apply_contact_lenses, apply_foundation, apply_mascara, apply_kajal, apply_concealer, apply_contour, detect_glasses_from_image, is_face_only, detect_and_crop_faces
+    allowed_file, count_people, is_real_photo_strict, is_blurry, contains_person, is_full_body_front_facing, apply_lipstick, apply_blush, apply_eyeshadow, apply_contact_lenses, apply_foundation, apply_mascara, apply_kajal, apply_concealer, apply_contour, detect_glasses_from_image, is_face_only, detect_and_crop_faces, apply_eyeliner
 )
 from apps.image_processing.core.jwellery_image_core import (
     apply_bindi, apply_mangtika
@@ -46,7 +46,7 @@ pose = mp_pose.Pose(
 )
 mp_face_mesh = mp.solutions.face_mesh
 
-MAX_FILE_SIZE = 15 * 1024 * 1024
+MAX_FILE_SIZE = 1 * 1024 * 1024
 
 
 def resize_image_bytes(image_bytes, max_size=300, quality=40):
@@ -101,8 +101,8 @@ def upload_image():
     # if not is_face_only(content):
     #     return jsonify({"error": "Full body image detected. Please upload a passport-style face image only."}), 400
 
-    if is_blurry(content):
-        return jsonify({"error": "Image is too blurry."}), 400
+    # if is_blurry(content):
+    #     return jsonify({"error": "Image is too blurry."}), 400
 
     if not contains_person(content):
         return jsonify({"error": "Image must contain a human"}), 400
@@ -209,7 +209,7 @@ def apply_makeup_api():
             thickness = int(payload.get(f"{feature}_thickness", 25))
             radius_scale = float(payload.get(f"{feature}_radius_scale", 1.0))
             hex_color = payload.get(f"{feature}_color")
-            bindi_size = int(payload.get("bindi_size", 6))
+            bindi_size = int(payload.get("bindi_size", 6)) 
             # hex_color = product.product_colors
     
             if feature == "lipstick":
@@ -217,7 +217,7 @@ def apply_makeup_api():
             elif feature == "blush":
                 result = apply_blush(result, landmarks, hex_color, intensity, radius)
             elif feature == "eyeshadow":
-                result = apply_eyeshadow(result, landmarks, hex_color, intensity, thickness)
+                result = apply_eyeshadow(result, hex_color, intensity, thickness)
             elif feature in ["lenses", "contactlenses"]:
                 result = apply_contact_lenses(result, lens_color=hex_color, lens_intensity=intensity, lens_radius_scale=radius_scale)
             # elif feature == "primer":
@@ -236,6 +236,8 @@ def apply_makeup_api():
                 result = apply_bindi(result, size=bindi_size, color_hex=hex_color)
             elif feature == "mangtika":
                 result = apply_mangtika(result, product.product_real_image, scale_factor=0.8)
+            elif feature == "eyeliner":
+                result = apply_eyeliner(result, intensity=intensity, color_hex=hex_color)
     
             user_makeup_entry = UserMakeupResultImage(
                 result_image_id=image_id,
@@ -314,7 +316,7 @@ def get_products():
                 "foundation",
                 "concealer",
                 "contactlenses",
-                "lipbalm"
+                "lipstick"
             ]
             query = query.filter(
                 db.func.lower(ProductDetailedCategory.name).in_(allowed_groom_categories)
@@ -362,6 +364,7 @@ def get_products():
 
 @products_bp.route("/store_products", methods=["POST"])
 def create_product():
+    
     if "product_real_image" not in request.files:
         return jsonify({"error": "Product real image is required"}), 400
 
@@ -376,7 +379,9 @@ def create_product():
     content = file.read()
 
     if len(content) > MAX_FILE_SIZE:
-        return jsonify({"error": f"File too large. Max {MAX_FILE_SIZE//(1024*1024)} MB"}), 400
+        return jsonify({"error": f"file too large. Max allowed size is {MAX_FILE_SIZE // (1024*1024)} MB"}), 400
+
+    
     colors_str = request.form.get("product_colors")
     product_colors = json.loads(colors_str) if colors_str else []
 

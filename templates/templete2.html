@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Venue & Budget Template</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Poppins", Arial, sans-serif;
+      /* background-color: #e62b83; */
+      color: #333;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #E835801A;
+      border-radius: 10px;
+      overflow: hidden;
+      padding:25px;
+    }
+
+.hero {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.hero img {
+  width: 100%;
+  display: block;
+  border-radius: 10px;
+}
+
+.hero-text {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #fff;
+  padding: 0 20px;
+}
+
+.hero-logo {
+  width: 60px; /* smaller than h2 */
+  height: auto;
+  margin-bottom: 15px;
+}
+
+.hero-text h2 {
+  font-size: 28px;
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+.hero-text p {
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+
+    .title-text {
+      text-align: center;
+     color: #C31162;
+      font-weight: 600;
+      font-size: 24px;
+      margin: 15px 0;
+    }
+
+.coin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px; /* space between image and text */
+  margin: 20px;
+  flex-wrap: wrap; /* for responsiveness on small screens */
+}
+
+.coin-image {
+  flex: 1;
+  text-align: center;
+}
+
+.coin-image img {
+  width: 100%;
+  max-width: 120px; /* keeps image from being too big */
+}
+
+.coin-text {
+  flex: 1;
+  font-size: 14px;
+  /* color: #fff; */
+  line-height: 1.5;
+}
+
+
+    .budget-section {
+      background-color: #fff;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 0 20px;
+      text-align: center;
+    }
+
+    .budget-section h3 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 15px;
+      font-weight: 500;
+    }
+
+    .budget-button {
+      background-color: #e62b83;
+      border: none;
+      color: #fff;
+      padding: 10px 25px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .venues {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 25px 20px;
+    }
+
+    .venue-card {
+      background-color: #fff;
+      border-radius: 10px;
+      width: calc(50% - 10px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .venue-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+    }
+
+    .venue-card h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 10px;
+      color: #000;
+    }
+
+    .venue-card p {
+      font-size: 12px;
+      color: #555;
+      margin: 0 10px 10px;
+      line-height: 1.5;
+    }
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-radius: 10px;
+  padding: 30px 20px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.footer-left {
+  flex: 1;
+  min-width: 300px;
+}
+
+.footer-left p {
+  color: #4a004a;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.app-buttons img {
+  height: 40px;
+  margin-right: 10px;
+}
+
+.footer-left small {
+  display: block;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+.footer-left a {
+  /* color: #f7328f; */
+  text-decoration: none;
+}
+
+.social-icons {
+  margin-top: 15px;
+}
+
+.social-icons i {
+  font-size: 18px;
+  color: rgb(158, 157, 157);
+  margin-right: 13px;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.social-icons i:hover {
+  color: #4a004a;
+}
+
+.footer-right img {
+  height: 180px;
+  width: auto;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    flex-direction: column-reverse;
+    text-align: center;
+  }
+
+  .footer-right img {
+    height: 150px;
+    margin-bottom: 15px;
+  }
+
+  .social-icons i {
+    font-size: 20px;
+  }
+
+  .hero-text {
+ 
+  top: 50%;
+
+}
+}
+
+    @media (max-width: 480px) {
+      .venues {
+        flex-direction: column;
+      }
+      .venue-card {
+        width: 100%;
+      }
+    }
+  </style>
+  <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+/>
+</head>
+<body>
+  <div class="container">
+
+<div class="hero">
+  <img src="image/templete2_hero.jpg" alt="Wedding Venue">
+  <div class="hero-text">
+    <img src="image/happy_wed_logo.png" alt="Wedding Logo" class="hero-logo" style="width: 187px;
+    padding-left: 36px;">
+    <h2>Book Your Vendor</h2>
+    <p>Discover top-rated wedding vendors with countless reliable reviews.</p>
+  </div>
+</div>
+
+
+
+
+    <p class="title-text">Save Your Favorite Venues & Vendors ✨</p>
+
+<div class="coin">
+  <div class="coin-image">
+    <img src="image/coin.png" alt="Coin Icon">
+  </div>
+  <div class="coin-text">
+    <p>It's a good idea to ask about any specific rules the venue has, such as noise-reduction, curfews, or protocols that your vendors should know about. What spaces do vendors have access to?</p>
+  </div>
+</div>
+
+
+    <div class="budget-section">
+      <h3>Decide your budget</h3>
+      <button class="budget-button">ESTIMATED BUDGET</button>
+    </div>
+
+    <div class="venues">
+      <div class="venue-card">
+        <img src="image/templete1_card.jpg" alt="Fort Jadhavgadh">
+        <h4>Fort Jadhavgadh, Pune</h4>
+        <p>Saswad<br>₹ 2,899 per plate</p>
+      </div>
+
+      <div class="venue-card">
+        <img src="image/templete1_card.jpg" alt="Fort Jadhavgadh">
+        <h4>Fort Jadhavgadh, Pune</h4>
+        <p>Saswad<br>₹ 2,899 per plate</p>
+      </div>
+    </div>
+
+    <!-- <div class="footer">
+      <h4>Download the app</h4>
+      <div class="app-buttons">
+        <img src="image/google-play.png" alt="Google Play">
+        <img src="image/app-store.png" alt="App Store">
+      </div>
+
+      <p>
+        Have questions or concerns? Reach out to us at <a href="mailto:xxx@email.com">xxx@email.com</a><br>
+        If you no longer wish to receive emails from Sublima, <a href="#">unsubscribe</a> here.
+      </p>
+
+      <p>Copyright © 2024 Sublima. All rights reserved.</p>
+
+      <div class="social-icons">
+        <a href="#">🌐</a>
+        <a href="#">💬</a>
+        <a href="#">📸</a>
+        <a href="#">💼</a>
+      </div>
+
+      <div class="mobile-preview">
+        <img src="image/mobile-screen.png" alt="Mobile Preview">
+      </div>
+    </div>
+
+  </div> -->
+      <div class="footer">
+  <div class="footer-left">
+    <p>Download the app</p>
+    <div class="app-buttons">
+      <img src="image/google_play.png" alt="Google Play">
+      <img src="image/app_store.png" alt="App Store">
+    </div>
+
+    <small>
+      Have questions or concerns? Reach out to us at
+      <a href="mailto:xxx@email.com">xxx@email.com</a><br>
+      If you no longer wish to receive emails from Sublima,
+      <a href="#">unsubscribe here</a>.<br>
+      Copyright © 2024 Sublima. All rights reserved.
+    </small>
+
+    <div class="social-icons">
+      <!-- <i class="fa-solid fa-location-dot"></i>
+      <i class="fa-brands fa-facebook-f"></i>
+      <i class="fa-brands fa-instagram"></i>
+      <i class="fa-brands fa-linkedin-in"></i> -->
+       <i class="fa-brands fa-facebook-f"></i>
+      <i class="fa-brands fa-linkedin-in"></i>
+      <i class="fa-brands fa-twitter"></i>
+      <i class="fa-brands fa-instagram"></i>
+    </div>
+  </div>
+
+  <div class="footer-right">
+    <img src="image/Devices.png" alt="Device" />
+  </div>
+</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HappyWedz - Wedding Photography</title>
+
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background-color: #f9f9f9;
+            padding: 20px;
+        }
+
+        .email-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background-image: url('image/templete3_hero.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2));
+            z-index: 1;
+        }
+
+        .hero-logo {
+            /* position: absolute; */
+            top: 30px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            color: #ffffff;
+            letter-spacing: 3px;
+            font-weight: normal;
+            z-index: 2;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            padding: 0 40px;
+        }
+
+        .hero-title {
+            font-family: 'Brush Script MT', cursive;
+            font-size: 45px;
+            color: #ff4081;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .hero-subtitle {
+            font-family: 'Georgia', serif;
+            font-size: 49px;
+            color: #ffffff;
+            letter-spacing: 3px;
+            font-weight: 400;
+        }
+
+        /* Award Section */
+        .award-section {
+            background-color: #f8e8f0;
+            padding: 70px 50px;
+            text-align: center;
+        }
+
+        .award-title {
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            color: #e91e63;
+            letter-spacing: 5px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        .award-description {
+            font-family: 'Georgia', serif;
+            font-size: 38px;
+            color: #6d6d6d;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Content Section */
+        .content-section {
+            display: flex;
+            padding: 70px 50px;
+            padding-bottom: 0px;
+            /* gap: 50px; */
+        }
+
+        .content-left {
+            flex: 1;
+            padding-right: 20px;
+        }
+
+        .section-label {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color: #e91e63;
+            letter-spacing: 4px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .section-heading {
+            font-family: 'Georgia', serif;
+            font-size: 42px;
+            color: #333333;
+            margin-bottom: 25px;
+            line-height: 1.2;
+        }
+
+        .section-text {
+            font-family: 'Georgia', serif;
+            font-size: 15px;
+            color: #555555;
+            line-height: 1.9;
+            margin-bottom: 35px;
+            padding:20px;
+            background-color: #f8e8f0;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: #e91e63;
+            color: #ffffff;
+            font-family: 'Georgia', serif;
+            font-size: 16px;
+            padding: 16px 42px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .cta-button:hover {
+            background-color: #c2185b;
+        }
+
+        .quote-mark {
+            font-family: 'Georgia', serif;
+            font-size: 180px;
+            color: #e8e8e8;
+            line-height: 0.3;
+            margin-top: 40px;
+        }
+
+        .content-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .photo-box-small {
+            width: 100%;
+            height: 200px;
+            background-color: #e8e8e8;
+        }
+
+        .photo-box-large {
+            width: 100%;
+            height: 320px;
+            background-color: #e8e8e8;
+        }
+
+        .photo-box-small img,
+        .photo-box-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Footer Section */
+   .footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-radius: 10px;
+  padding: 30px 20px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.footer-left {
+  flex: 1;
+  min-width: 300px;
+}
+
+.footer-left p {
+  color: #4a004a;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.app-buttons img {
+  height: 40px;
+  margin-right: 10px;
+}
+
+.footer-left small {
+  display: block;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
+.footer-left a {
+  /* color: #f7328f; */
+  text-decoration: none;
+}
+
+.social-icons {
+  margin-top: 15px;
+}
+
+.social-icons i {
+  font-size: 18px;
+  color: rgb(158, 157, 157);
+  margin-right: 13px;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.social-icons i:hover {
+  color: #4a004a;
+}
+
+.footer-right img {
+  height: 180px;
+  width: auto;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    flex-direction: column-reverse;
+    text-align: center;
+  }
+
+  .footer-right img {
+    height: 150px;
+    margin-bottom: 15px;
+  }
+
+  .social-icons i {
+    font-size: 20px;
+  }
+
+  .hero-text {
+ 
+  top: 50%;
+
+}
+}
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .content-section {
+                flex-direction: column;
+                padding: 40px 25px;
+            }
+
+            .footer-content {
+                flex-direction: column;
+            }
+
+            .hero-title {
+                font-size: 36px;
+            }
+
+            .hero-subtitle {
+                font-size: 38px;
+            }
+
+            .section-heading {
+                font-size: 32px;
+            }
+
+            .award-description {
+                font-size: 28px;
+            }
+        }
+    </style>
+      <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+/>
+</head>
+<body>
+    <div class="email-container">
+        
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <!-- <div class="hero-logo">∞ HAPPYWEDZ</div> -->
+
+            <div class="hero-content">
+                                 <img src="image/happy_wed_logo.png" alt="Wedding Logo" class="hero-logo" style="width: 187px;
+    padding-left: 36px;">
+                <div class="hero-title">Your Dream Wedding Awaits</div>
+                <div class="hero-subtitle">Wedding Photography</div>
+            </div>
+        </div>
+
+        <!-- Award Section -->
+        <div class="award-section">
+            <div class="award-title">AWARD WINNING PHOTOGRAPHY</div>
+            <div class="award-description">Showcasing your big day in a memorable and unforgettable way.</div>
+        </div>
+
+        <!-- Content Section -->
+        <div class="content-section">
+            <div class="content-left">
+                <div class="section-label">CRAFTING MEMORIES</div>
+                <h2 class="section-heading">Welcome to happywedz</h2>
+                <p class="section-text">Your wedding day is a once-in-a-lifetime event, and choosing the right photographer is essential to preserving its magic for years to come. I would be honored to be a part of your special day.</p>
+                <a href="#" class="cta-button">Book Your vendor</a>
+            </div>
+            <div class="content-right">
+                <div class="photo-box-small">
+                    <img src="image/22ff3b600201a3dbaea40c2204d82727151b4647.jpg" alt="Wedding Photo 1">
+                </div>
+                <div class="photo-box-large">
+                    <img src="image/5d66950045fef3cf1451fee1809823475a0233df.jpg" alt="Wedding Photo 2">
+                </div>
+            </div>
+        </div>
+
+    <div class="footer">
+
+  <div class="footer-left">
+    <p>Download the app</p>
+    <div class="app-buttons">
+      <img src="image/google_play.png" alt="Google Play">
+      <img src="image/app_store.png" alt="App Store">
+    </div>
+
+    <small>
+      Have questions or concerns? Reach out to us at
+      <a href="mailto:xxx@email.com">xxx@email.com</a><br>
+      If you no longer wish to receive emails from Sublima,
+      <a href="#">unsubscribe here</a>.<br>
+      Copyright © 2024 Sublima. All rights reserved.
+    </small>
+
+    <div class="social-icons">
+      <!-- <i class="fa-solid fa-location-dot"></i>
+      <i class="fa-brands fa-facebook-f"></i>
+      <i class="fa-brands fa-instagram"></i>
+      <i class="fa-brands fa-linkedin-in"></i> -->
+       <i class="fa-brands fa-facebook-f"></i>
+      <i class="fa-brands fa-linkedin-in"></i>
+      <i class="fa-brands fa-twitter"></i>
+      <i class="fa-brands fa-instagram"></i>
+    </div>
+  </div>
+
+  <div class="footer-right">
+    <img src="image/Devices.png" alt="Device" />
+  </div>
+</div>
+    </div>
+
+    </div>
+</body>
+</html>
