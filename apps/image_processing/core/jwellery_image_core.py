@@ -6,6 +6,47 @@ from PIL import Image
 import io
 
 
+# def apply_bindi(image, color_hex="#FF0000", size=6):
+#     # Convert hex color to BGR
+#     color_hex = color_hex.lstrip("#")
+#     r, g, b = tuple(int(color_hex[i:i+2], 16) for i in (0, 2, 4))
+#     bindi_color = (b, g, r)  # OpenCV uses BGR
+
+#     # Prepare Mediapipe face mesh
+#     mp_face_mesh = mp.solutions.face_mesh
+#     face_mesh = mp_face_mesh.FaceMesh(
+#         static_image_mode=True,
+#         max_num_faces=1,
+#         refine_landmarks=True
+#     )
+
+#     # Mediapipe expects RGB
+#     rgb_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+#     results = face_mesh.process(rgb_img)
+#     output = image.copy()
+
+#     if results.multi_face_landmarks:
+#         for face_landmarks in results.multi_face_landmarks:
+#             h, w, _ = rgb_img.shape
+
+#             # Eyebrow landmarks
+#             left_eyebrow = face_landmarks.landmark[65]
+#             right_eyebrow = face_landmarks.landmark[295]
+
+#             # Pixel coordinates
+#             lx, ly = int(left_eyebrow.x * w), int(left_eyebrow.y * h)
+#             rx, ry = int(right_eyebrow.x * w), int(right_eyebrow.y * h)
+
+#             # Midpoint between eyebrows
+#             cx, cy = (lx + rx) // 2, (ly + ry) // 2
+
+#             # Draw the bindi
+#             cv2.circle(output, (cx, cy), size, bindi_color, -1)
+
+#     face_mesh.close()
+#     return output
+
+
 def apply_bindi(image, color_hex="#FF0000", size=6):
     # Convert hex color to BGR
     color_hex = color_hex.lstrip("#")
@@ -20,7 +61,6 @@ def apply_bindi(image, color_hex="#FF0000", size=6):
         refine_landmarks=True
     )
 
-    # Mediapipe expects RGB
     rgb_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = face_mesh.process(rgb_img)
     output = image.copy()
@@ -33,15 +73,17 @@ def apply_bindi(image, color_hex="#FF0000", size=6):
             left_eyebrow = face_landmarks.landmark[65]
             right_eyebrow = face_landmarks.landmark[295]
 
-            # Pixel coordinates
-            lx, ly = int(left_eyebrow.x * w), int(left_eyebrow.y * h)
-            rx, ry = int(right_eyebrow.x * w), int(right_eyebrow.y * h)
-
             # Midpoint between eyebrows
-            cx, cy = (lx + rx) // 2, (ly + ry) // 2
+            cx = int((left_eyebrow.x + right_eyebrow.x) / 2 * w)
+            cy = int((left_eyebrow.y + right_eyebrow.y) / 2 * h)
 
-            # Draw the bindi
-            cv2.circle(output, (cx, cy), size, bindi_color, -1)
+            # Create a transparent overlay for anti-aliasing
+            overlay = output.copy()
+            cv2.circle(overlay, (cx, cy), size, bindi_color, -1, lineType=cv2.LINE_AA)
+
+            # Blend smoothly
+            alpha = 0.9
+            output = cv2.addWeighted(overlay, alpha, output, 1 - alpha, 0)
 
     face_mesh.close()
     return output

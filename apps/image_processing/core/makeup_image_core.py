@@ -568,25 +568,38 @@ def apply_blush(original_img, landmarks, color="#ff6666", intensity=0.5, radius=
     left_eye = landmarks["left_eye"]
     right_eye = landmarks["right_eye"]
 
-    left_cheek_x = int((chin[3][0] + left_eye[0][0]) / 2)
-    left_cheek_y = int((chin[3][1] + left_eye[0][1]) / 2)
-    left_cheek = (left_cheek_x, left_cheek_y)
+    left_cheek = (
+        int((chin[3][0] + left_eye[0][0]) / 2),
+        int((chin[3][1] + left_eye[0][1]) / 2),
+    )
+    right_cheek = (
+        int((chin[13][0] + right_eye[3][0]) / 2),
+        int((chin[13][1] + right_eye[3][1]) / 2),
+    )
 
-    right_cheek_x = int((chin[13][0] + right_eye[3][0]) / 2)
-    right_cheek_y = int((chin[13][1] + right_eye[3][1]) / 2)
-    right_cheek = (right_cheek_x, right_cheek_y)
-
+    # Step 1: draw blush circles
     cv2.circle(blush_mask, left_cheek, radius, 255, -1)
     cv2.circle(blush_mask, right_cheek, radius, 255, -1)
 
-    mask_blur = cv2.GaussianBlur(blush_mask, (101, 101), 0).astype(np.float32) / 255.0
+    # Step 2: create a face polygon mask (to restrict blush only to skin area)
+    face_mask = np.zeros_like(blush_mask)
+    face_contour = np.array(chin + [chin[-1]])  # ensure closed contour
+    cv2.fillPoly(face_mask, [face_contour], 255)
+
+    # Step 3: restrict blush mask inside face mask
+    restricted_mask = cv2.bitwise_and(blush_mask, face_mask)
+
+    # Step 4: blur and apply overlay
+    mask_blur = cv2.GaussianBlur(restricted_mask, (81, 81), 0).astype(np.float32) / 255.0
     mask_3 = cv2.merge([mask_blur] * 3)
 
     color_bgr = np.array(hex_to_bgr(color), dtype=np.uint8)
-    overlay = np.full_like(original_img, color_bgr, dtype=np.uint8)
+    overlay = np.full_like(original_img, color_bgr)
     alpha = np.clip(intensity, 0.0, 1.0)
 
-    return cv2.convertScaleAbs(original_img * (1 - mask_3 * alpha) + overlay * (mask_3 * alpha))
+    result = cv2.convertScaleAbs(original_img * (1 - mask_3 * alpha) + overlay * (mask_3 * alpha))
+    return result
+
 
 
 def hex_to_bgrs(hex_color: str):
@@ -594,171 +607,101 @@ def hex_to_bgrs(hex_color: str):
     return tuple(int(hex_color[i:i+2], 16) for i in (4, 2, 0))  # BGR
 
 
-def apply_professional_eyeshadow(image, landmarks, color="#9370DB", intensity=0.4):
-    result = image.copy().astype(np.float32)
-    bgr_color = np.array(hex_to_bgrs(color), dtype=np.float32)
+def apply_eyeshadow(image, hex_color="#9370DB", intensity=0.6, thickness=30):
+    """
+    Apply realistic eyeshadow along the eyelid curve with soft blending.
+    Supports both Mediapipe landmark objects and dict-based landmarks.
+    """
+    # ✅ Convert image to RGB (and keep reference)
+    if image is None or not isinstance(image, np.ndarray):
+        print("⚠️ Invalid image input for eyeshadow.")
+        return image
 
+    if len(image.shape) == 2:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
 
-    deep_color = bgr_color * 0.6
+    img_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    h, w, _ = img_rgb.shape
 
-    for eye_key, brow_key in [("left_eye", "left_eyebrow"), ("right_eye", "right_eyebrow")]:
-        if eye_key not in landmarks or brow_key not in landmarks:
-            continue
+    # ✅ Convert hex to RGB tuple
+    color = tuple(int(hex_color.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
 
-        eye_points = np.array(landmarks[eye_key], dtype=np.int32)
-        brow_points = np.array(landmarks[brow_key], dtype=np.int32)
+    # ✅ Detect landmarks directly
+    mp_face_mesh = mp.solutions.face_mesh
+    with mp_face_mesh.FaceMesh(
+        static_image_mode=True,
+        refine_landmarks=True,
+        max_num_faces=1
+    ) as face_mesh:
+        results = face_mesh.process(img_rgb)
 
-        if len(eye_points) < 6 or len(brow_points) < 3:
-            continue
+    if not results.multi_face_landmarks:
+        print("⚠️ No face detected for eyeshadow.")
+        return image
 
-        inner_corner = eye_points[0]
-        outer_corner = eye_points[3]
-        eye_top = np.mean(eye_points[1:3], axis=0).astype(int)
-        eye_bottom = np.mean(eye_points[4:6], axis=0).astype(int)
-        eye_width = abs(outer_corner[0] - inner_corner[0])
-        eye_height = abs(eye_top[1] - eye_bottom[1])
+    lm = results.multi_face_landmarks[0]
 
-        brow_inner = brow_points[0]
-        brow_outer = brow_points[-1]
-        brow_top = np.min(brow_points[:, 1])
-        brow_bottom = np.max(brow_points[:, 1])
+    def get_coords(idxs):
+        return np.array([
+            (int(lm.landmark[i].x * w), int(lm.landmark[i].y * h)) for i in idxs
+        ])
 
-        shadow_inner_x = min(inner_corner[0], brow_inner[0]) - int(eye_width * 0.1)
-        shadow_outer_x = max(outer_corner[0], brow_outer[0]) + int(eye_width * 0.2)
+    # Eyelid points
+    left_upper_full = get_coords([33, 160, 159, 158, 157, 173, 133])
+    right_upper_full = get_coords([362, 385, 386, 387, 388, 466, 263])
 
-        shadow_bottom_y = eye_top[1]
-        shadow_top_y = brow_bottom - int((brow_bottom - brow_top) * 0.3)
+    def extend_corners(points, side="left", extend_len_outer=25, extend_len_inner=15):
+        pts = points.copy().astype(np.float32)
+        if side == "left":
+            v_outer = pts[0] - pts[1]
+            v_outer = v_outer / np.linalg.norm(v_outer) * extend_len_outer
+            pts[0] = pts[0] + v_outer
 
-        main_shadow_points = np.array([
-            [shadow_inner_x, shadow_bottom_y],
-            [shadow_inner_x + int(eye_width * 0.1), shadow_top_y],
-            [inner_corner[0] + int(eye_width * 0.3), shadow_top_y - int(eye_height * 0.2)],
-            [outer_corner[0] - int(eye_width * 0.1), shadow_top_y - int(eye_height * 0.3)],
-            [shadow_outer_x - int(eye_width * 0.1), shadow_top_y],
-            [shadow_outer_x, shadow_bottom_y],
-            [shadow_outer_x - int(eye_width * 0.05), shadow_bottom_y - int(eye_height * 0.1)],
-            [outer_corner[0], eye_top[1]],
-            [inner_corner[0] + int(eye_width * 0.1), eye_top[1]],
-            [shadow_inner_x + int(eye_width * 0.05), shadow_bottom_y - int(eye_height * 0.1)]
-        ], dtype=np.int32)
+            v_inner = pts[-1] - pts[-2]
+            v_inner = v_inner / np.linalg.norm(v_inner) * extend_len_inner
+            pts[-1] = pts[-1] + v_inner
+        else:
+            v_outer = pts[0] - pts[1]
+            v_outer = v_outer / np.linalg.norm(v_outer) * extend_len_outer
+            pts[0] = pts[0] + v_outer
 
-        outer_v_width = int(eye_width * 0.4)
-        outer_v_points = np.array([
-            [outer_corner[0] - int(outer_v_width * 0.3), eye_top[1]],
-            [outer_corner[0] - int(outer_v_width * 0.1), shadow_top_y - int(eye_height * 0.2)],
-            [shadow_outer_x - int(eye_width * 0.05), shadow_top_y],
-            [shadow_outer_x, shadow_bottom_y],
-            [shadow_outer_x - int(eye_width * 0.1), shadow_bottom_y + int(eye_height * 0.2)],
-            outer_corner
-        ], dtype=np.int32)
+            v_inner = pts[-1] - pts[-2]
+            v_inner = v_inner / np.linalg.norm(v_inner) * extend_len_inner
+            pts[-1] = pts[-1] + v_inner
+        return pts
 
-        main_mask = np.zeros(image.shape[:2], dtype=np.float32)
-        cv2.fillPoly(main_mask, [main_shadow_points], 1.0)
+    # Extend both sides
+    left_upper_full = extend_corners(left_upper_full, side="left")
+    right_upper_full = extend_corners(right_upper_full, side="right")
 
-        h, w = main_mask.shape
-        y_coords, x_coords = np.ogrid[:h, :w]
+    def create_eyeshadow_patch(image, upper_points, height_shift=thickness, color=color, alpha=intensity):
+        pts = np.array(upper_points, dtype=np.float32)
+        top_pts = pts.copy()
+        top_pts[:, 1] -= height_shift
+        v_dir = top_pts[-1] - top_pts[-2]
+        top_pts[-1] = top_pts[-1] + v_dir * 0.2
 
-        eye_center_x = (inner_corner[0] + outer_corner[0]) // 2
-        horizontal_gradient = np.exp(-((x_coords - eye_center_x) ** 2) / (eye_width ** 2))
+        polygon = np.vstack([pts, top_pts[::-1]]).astype(np.int32)
 
-        vertical_gradient = np.exp(-((y_coords - shadow_bottom_y) ** 2) / ((shadow_top_y - shadow_bottom_y) ** 2))
+        mask = np.zeros_like(image, dtype=np.uint8)
+        cv2.fillPoly(mask, [polygon], color)
+        mask = cv2.GaussianBlur(mask, (19, 19), 10)
 
-        combined_gradient = horizontal_gradient * vertical_gradient
-        main_mask *= combined_gradient
+        image_f = image.astype(np.float32) / 255.0
+        mask_f = mask.astype(np.float32) / 255.0
+        mask_gray = cv2.cvtColor(mask, cv2.COLOR_RGB2GRAY) / 255.0
+        mask_gray = np.expand_dims(mask_gray, 2)
 
-        main_mask = cv2.GaussianBlur(main_mask, (0, 0), 12)
+        result = image_f * (1 - mask_gray * alpha) + mask_f * (mask_gray * alpha)
+        result = np.clip(result * 255, 0, 255).astype(np.uint8)
+        return result
 
-        outer_mask = np.zeros(image.shape[:2], dtype=np.float32)
-        cv2.fillPoly(outer_mask, [outer_v_points], 1.0)
-        outer_mask = cv2.GaussianBlur(outer_mask, (0, 0), 8)
+    # Apply eyeshadow on both eyes
+    result = create_eyeshadow_patch(img_rgb, left_upper_full, thickness, color, intensity)
+    result = create_eyeshadow_patch(result, right_upper_full, thickness, color, intensity)
 
-        base_intensity = intensity * 0.7
-        outer_intensity = intensity * 0.9
-
-        for i in range(3):
-            color_layer = main_mask * base_intensity * bgr_color[i]
-            result[:, :, i] = (1 - main_mask * base_intensity) * result[:, :, i] + color_layer
-
-        for i in range(3):
-            outer_layer = outer_mask * outer_intensity * deep_color[i]
-            result[:, :, i] = (1 - outer_mask * outer_intensity) * result[:, :, i] + outer_layer
-
-        highlight_color = np.minimum(bgr_color * 1.4, 255)
-        highlight_radius = int(eye_width * 0.12)
-        highlight_center = (inner_corner[0] - int(eye_width * 0.05), inner_corner[1] - int(eye_height * 0.3))
-
-        highlight_mask = np.zeros(image.shape[:2], dtype=np.float32)
-        cv2.circle(highlight_mask, highlight_center, highlight_radius, 1.0, -1)
-        highlight_mask = cv2.GaussianBlur(highlight_mask, (0, 0), highlight_radius//2)
-
-        highlight_intensity = intensity * 0.4
-        for i in range(3):
-            highlight_layer = highlight_mask * highlight_intensity * highlight_color[i]
-            result[:, :, i] = np.minimum(result[:, :, i] + highlight_layer, 255)
-
-    return np.clip(result, 0, 255).astype(np.uint8)
-
-
-def apply_wide_coverage_eyeshadow(image, landmarks, color="#9370DB", intensity=0.4):
-    result = image.copy().astype(np.float32)
-    bgr_color = np.array(hex_to_bgrs(color), dtype=np.float32)
-
-    for eye_key, brow_key in [("left_eye", "left_eyebrow"), ("right_eye", "right_eyebrow")]:
-        if eye_key not in landmarks or brow_key not in landmarks:
-            continue
-
-        eye_points = np.array(landmarks[eye_key], dtype=np.int32)
-        brow_points = np.array(landmarks[brow_key], dtype=np.int32)
-
-        if len(eye_points) < 6 or len(brow_points) < 3:
-            continue
-
-        inner_corner = eye_points[0]
-        outer_corner = eye_points[3]
-        eye_center = np.mean(eye_points, axis=0).astype(int)
-
-        brow_start = brow_points[0]
-        brow_end = brow_points[-1]
-        brow_top = np.min(brow_points[:, 1])
-
-        eye_width = abs(outer_corner[0] - inner_corner[0])
-
-        left_bound = min(inner_corner[0], brow_start[0]) - int(eye_width * 0.1)
-        right_bound = max(outer_corner[0], brow_end[0]) + int(eye_width * 0.3)
-
-        eye_top_line = min(eye_points[1][1], eye_points[2][1]) 
-        bottom_bound = eye_top_line - int(eye_width * 0.1) 
-        top_bound = brow_top + int((eye_top_line - brow_top) * 0.4)  
-
-        center_x = (left_bound + right_bound) // 2
-        center_y = (top_bound + bottom_bound) // 2
-        width_radius = (right_bound - left_bound) // 2
-        height_radius = (bottom_bound - top_bound) // 2
-
-        mask = np.zeros(image.shape[:2], dtype=np.float32)
-
-        y_coords, x_coords = np.ogrid[:mask.shape[0], :mask.shape[1]]
-        ellipse_mask = ((x_coords - center_x) / width_radius) ** 2 + ((y_coords - center_y) / height_radius) ** 2 <= 1
-        mask[ellipse_mask] = 1.0
-
-        gradient = 1.0 - np.abs(y_coords - (bottom_bound + int((top_bound - bottom_bound) * 0.3))) / ((top_bound - bottom_bound) * 0.7)
-        gradient = np.maximum(0, gradient)
-        gradient = np.power(gradient, 0.8)
-
-        final_mask = mask * gradient
-
-        final_mask = cv2.GaussianBlur(final_mask, (0, 0), 15)
-
-        for i in range(3):
-            color_layer = final_mask * intensity * bgr_color[i]
-            result[:, :, i] = (1 - final_mask * intensity) * result[:, :, i] + color_layer
-
-    return np.clip(result, 0, 255).astype(np.uint8)
-
-
-def apply_eyeshadow(image, landmarks, color="#9370DB", intensity=0.4, thickness=25):
-    return apply_wide_coverage_eyeshadow(image, landmarks, color, intensity)
-
+    # Convert back to BGR before returning
+    return cv2.cvtColor(result, cv2.COLOR_RGB2BGR)
 
 mp_face_mesh = mp.solutions.face_mesh
 
@@ -950,6 +893,7 @@ def apply_lenses_advanced_fixed(image, lens_color="#1E90FF", lens_intensity=0.7,
 
 
 def apply_contact_lenses(image, lens_color="#1E90FF", lens_intensity=0.7, lens_radius_scale=1.2, add_reflection=True):
+    print(lens_color)
     return apply_lenses_advanced_fixed(
         image,
         lens_color=lens_color,
@@ -1083,19 +1027,46 @@ def get_face_mask(image_bgr, close_kernel=15, debug=False):
 
 def apply_foundation(image, landmarks, hex_color="#f5d6c6", intensity=0.6):
     result = image.copy()
-
     mask = get_face_mask(image)
     if mask is None or mask.sum() == 0:
         return result
 
+    # 1️⃣ Smooth natural texture first
     smooth = cv2.bilateralFilter(result, d=15, sigmaColor=80, sigmaSpace=80)
-
     alpha = np.clip(intensity, 0.0, 1.0)
     primer_applied = cv2.addWeighted(smooth, alpha, result, 1 - alpha, 0)
     result[mask == 255] = primer_applied[mask == 255]
 
+    # 2️⃣ Convert hex color to BGR
+    hex_color = hex_color.lstrip("#")
+    r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    tint = np.full_like(result, (b, g, r), dtype=np.uint8)
+
+    # 3️⃣ Build feathered alpha mask using distance transform
+    face_mask = (mask > 0).astype(np.uint8)
+    dist = cv2.distanceTransform(face_mask, cv2.DIST_L2, 5)
+    dist = dist / (dist.max() + 1e-5)  # normalize 0–1
+    dist = np.clip(dist, 0, 1)
+    dist = cv2.GaussianBlur(dist, (41, 41), 0)
+    alpha_mask = (dist * face_mask).astype(np.float32)
+    alpha_mask = np.expand_dims(alpha_mask, axis=-1)
+
+    # 4️⃣ Preserve face luminance (avoid flattening natural light)
+    hsv_result = cv2.cvtColor(result, cv2.COLOR_BGR2HSV).astype(np.float32)
+    hsv_tint = cv2.cvtColor(tint, cv2.COLOR_BGR2HSV).astype(np.float32)
+    hsv_tint[..., 2] = hsv_result[..., 2]  # keep same brightness
+    tint_preserve = cv2.cvtColor(hsv_tint.astype(np.uint8), cv2.COLOR_HSV2BGR)
+
+    # 5️⃣ Final smooth tint blend 
+    tint_strength = 0.9 * intensity
+    result = result.astype(np.float32)
+    blended = (result * (1 - alpha_mask * tint_strength) +
+               tint_preserve * (alpha_mask * tint_strength))
+    result = np.clip(blended, 0, 255).astype(np.uint8)
+
+    # 6️⃣ Add natural glow enhancement (soft light effect)
     if intensity > 0:
-        glow = cv2.convertScaleAbs(result, alpha=1.02, beta=int(10 * intensity))
+        glow = cv2.convertScaleAbs(result, alpha=1.03, beta=int(5 * intensity))
         result[mask == 255] = glow[mask == 255]
 
     return result
@@ -1210,54 +1181,81 @@ LEFT_EYE = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 1
 RIGHT_EYE = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398]
 
 def apply_kajal(image, kajal_color_hex="#000000", intensity=3):
+    # Convert hex → RGB → BGR
     hex_color = kajal_color_hex.lstrip("#")
-    try:
-        rgb = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-    except:
-        rgb = (0, 0, 0)
+    rgb = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
     kajal_color_bgr = rgb[::-1]
 
     h, w = image.shape[:2]
-    result_image = image.copy()
+    result = image.copy()
 
-    # Use MediaPipe FaceMesh
+    mp_face_mesh = mp.solutions.face_mesh
     with mp_face_mesh.FaceMesh(
         static_image_mode=True,
         max_num_faces=1,
         refine_landmarks=True,
         min_detection_confidence=0.5
     ) as face_mesh:
-        image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        results = face_mesh.process(image_bgr)
-
-        if not results.multi_face_landmarks:
-            # print("No face detected")
+        img_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        res = face_mesh.process(img_rgb)
+        if not res.multi_face_landmarks:
             return image
 
-        face_landmarks = results.multi_face_landmarks[0]
-        landmarks = []
-        for lm in face_landmarks.landmark:
-            x = int(lm.x * w)
-            y = int(lm.y * h)
-            landmarks.append([x, y])
+        face = res.multi_face_landmarks[0]
 
-        # Draw kajal on both eyes
-        for eye_indices in [LEFT_EYE, RIGHT_EYE]:
-            eye_points = np.array([landmarks[i] for i in eye_indices], dtype=np.int32)
-            thickness = max(1, int(round(intensity * 2)))
-            cv2.polylines(result_image, [eye_points], True, kajal_color_bgr, thickness, lineType=cv2.LINE_AA)
+        left_eye = [33, 7, 163, 144, 145, 153, 154, 155, 133,
+                    173, 157, 158, 159, 160, 161, 246]
+        right_eye = [362, 382, 381, 380, 374, 373, 390, 249, 263,
+                     466, 388, 387, 386, 385, 384, 398]
 
-            # Optional subtle fill
-            if thickness > 2:
-                mask = np.zeros((h, w), dtype=np.uint8)
-                cv2.polylines(mask, [eye_points], True, 255, max(1, thickness-1), lineType=cv2.LINE_AA)
-                alpha = 0.1
-                for c in range(3):
-                    ch = result_image[:, :, c].astype(np.float32)
-                    ch = ch * (1 - mask.astype(np.float32)/255.0 * alpha) + mask.astype(np.float32)/255.0 * alpha * kajal_color_bgr[c]
-                    result_image[:, :, c] = np.clip(ch, 0, 255).astype(np.uint8)
+        def get_smooth_curve_points(landmark_indices):
+            """Create a smooth, closed curve around the eye region."""
+            pts = np.array([[face.landmark[i].x * w, face.landmark[i].y * h]
+                            for i in landmark_indices], dtype=np.float32)
 
-    return result_image
+            # Add a few extrapolated points beyond outer corner for continuity
+            dx = pts[-1][0] - pts[-2][0]
+            dy = pts[-1][1] - pts[-2][1]
+            extra = np.array([[pts[-1][0] + dx * 0.15, pts[-1][1] + dy * 0.15]])
+            pts = np.concatenate([pts, extra])
+
+            # Fit spline (periodic = False to control shape better)
+            try:
+                tck, u = splprep(pts.T, s=3.0, per=False)
+                unew = np.linspace(0, 1, 200)
+                smooth_pts = np.array(splev(unew, tck)).T
+            except Exception:
+                smooth_pts = pts  # fallback
+            return smooth_pts.astype(np.int32)
+
+        def draw_kajal_curve(landmark_indices):
+            """Draws smooth kajal on given eye landmarks."""
+            curve_pts = get_smooth_curve_points(landmark_indices)
+
+            kajal_mask = np.zeros((h, w), dtype=np.uint8)
+
+            # Draw a continuous soft line following the spline curve
+            for i in range(len(curve_pts) - 1):
+                pt1 = tuple(curve_pts[i])
+                pt2 = tuple(curve_pts[i + 1])
+                cv2.line(kajal_mask, pt1, pt2, 255, thickness=5)
+
+            # Blur for realism (smooth gradient)
+            kajal_mask = cv2.GaussianBlur(kajal_mask, (9, 9), 4)
+            kajal_mask_normalized = kajal_mask.astype(np.float32) / 255.0
+
+            color = np.array(kajal_color_bgr, dtype=np.float32)
+            for c in range(3):
+                result[:, :, c] = (
+                    result[:, :, c] * (1 - kajal_mask_normalized * intensity)
+                    + color[c] * kajal_mask_normalized * intensity
+                )
+
+        # Apply kajal to both eyes
+        draw_kajal_curve(left_eye)
+        draw_kajal_curve(right_eye)
+
+    return result.astype(np.uint8)
     
 
 def alpha_blend(base_bgr, overlay_bgr, mask_uint8):
@@ -1483,24 +1481,24 @@ def apply_contour(img_bgr, intensity=0.2, color_hex="#644632"):
     mask_draw.arc(bbox, start=0, end=180, fill=255, width=line_width)
     
     # Forehead bands
-    forehead_y = int(eyebrow_center.y * h) - int(h * 0.10)
-    forehead_band_width = int(nose_width * 0.9)
-    forehead_band_height = int(nose_width * 0.7)
-    gap_between_bands = int(nose_width * 0.6)
-    tilt_angle = -30
+    # forehead_y = int(eyebrow_center.y * h) - int(h * 0.10)
+    # forehead_band_width = int(nose_width * 0.9)
+    # forehead_band_height = int(nose_width * 0.7)
+    # gap_between_bands = int(nose_width * 0.6)
+    # tilt_angle = -30
     
-    def draw_band(x_start, tilt):
-        band_mask = Image.new("L", img.size, 0)
-        band_draw = ImageDraw.Draw(band_mask)
-        band_box = [(x_start, forehead_y),
-                    (x_start + forehead_band_width, forehead_y + forehead_band_height)]
-        band_draw.rounded_rectangle(band_box, radius=forehead_band_height//2, fill=255)
-        return band_mask.rotate(tilt, center=(x_start + forehead_band_width//2, forehead_y), fillcolor=0)
+    # def draw_band(x_start, tilt):
+    #     band_mask = Image.new("L", img.size, 0)
+    #     band_draw = ImageDraw.Draw(band_mask)
+    #     band_box = [(x_start, forehead_y),
+    #                 (x_start + forehead_band_width, forehead_y + forehead_band_height)]
+    #     band_draw.rounded_rectangle(band_box, radius=forehead_band_height//2, fill=255)
+    #     return band_mask.rotate(tilt, center=(x_start + forehead_band_width//2, forehead_y), fillcolor=0)
     
-    left_band = draw_band(x_center - gap_between_bands - forehead_band_width, -tilt_angle)
-    right_band = draw_band(x_center + gap_between_bands, tilt_angle)
-    mask = ImageChops.add(mask, left_band)
-    mask = ImageChops.add(mask, right_band)
+    # left_band = draw_band(x_center - gap_between_bands - forehead_band_width, -tilt_angle)
+    # right_band = draw_band(x_center + gap_between_bands, tilt_angle)
+    # mask = ImageChops.add(mask, left_band)
+    # mask = ImageChops.add(mask, right_band)
     
     # --- Jawline contour ---
     left_jaw_indices = [234, 93, 132, 58, 172, 136, 150, 149, 176, 148]
@@ -1572,3 +1570,136 @@ def apply_contour(img_bgr, intensity=0.2, color_hex="#644632"):
     
     img_final = Image.alpha_composite(img_rgba, overlay).convert("RGB")
     return cv2.cvtColor(np.array(img_final), cv2.COLOR_RGB2BGR)
+
+def apply_eyeliner(image_bgr, intensity=0.85, color_hex="#000000"):
+    # Convert HEX → BGR
+    r, g, b = [int(color_hex.lstrip("#")[i:i+2], 16) for i in (0, 2, 4)]
+    eyeliner_color = (b, g, r)
+
+    h, w, _ = image_bgr.shape
+    overlay = image_bgr.copy()
+
+    mp_face_mesh = mp.solutions.face_mesh
+    with mp_face_mesh.FaceMesh(
+        static_image_mode=True,
+        max_num_faces=1,
+        refine_landmarks=True
+    ) as fm:
+        rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        res = fm.process(rgb)
+        if not res.multi_face_landmarks:
+            return image_bgr
+        lm = res.multi_face_landmarks[0].landmark
+
+    left_eye = [33, 246, 161, 160, 159, 158, 157, 173, 133]
+    right_eye = [263, 466, 388, 387, 386, 385, 384, 398, 362]
+
+    def pts_from(indices):
+        return [(int(lm[i].x * w), int(lm[i].y * h)) for i in indices]
+
+    for eye_indices in [left_eye, right_eye]:
+        pts = pts_from(eye_indices)
+
+        # Draw upper lash line
+        for i in range(len(pts) - 1):
+            progress = i / (len(pts) - 1)
+            thickness = max(1, int((2 + (1 - progress) * 4) * intensity))
+            cv2.line(overlay, pts[i], pts[i + 1], eyeliner_color, thickness, cv2.LINE_AA)
+
+        # Wing
+        outer = pts[0]
+        inner = pts[-1]
+        vec = np.array(outer) - np.array(inner)
+        angle = np.arctan2(vec[1], vec[0])
+        wing_angle = angle + (np.pi/12 if outer[0] < inner[0] else -np.pi/12)
+        wing_len = int(np.linalg.norm(vec) * 0.25)
+        wing_tip = (
+            int(outer[0] + wing_len * np.cos(wing_angle)),
+            int(outer[1] + wing_len * np.sin(wing_angle))
+        )
+
+        cv2.line(overlay, outer, wing_tip, eyeliner_color, max(1, int(3 * intensity)), cv2.LINE_AA)
+
+
+    return cv2.addWeighted(overlay, 0.75, image_bgr, 0.25, 0)
+
+# def apply_eyeliner(image_bgr, intensity=0.8, color_hex="#000000"):
+#     # Convert HEX → BGR
+#     color_hex = color_hex.lstrip("#")
+#     r, g, b = tuple(int(color_hex[i:i+2], 16) for i in (0, 2, 4))
+#     eyeliner_color = (b, g, r)
+
+#     h, w, _ = image_bgr.shape
+#     mp_face_mesh = mp.solutions.face_mesh
+#     face_mesh = mp_face_mesh.FaceMesh(
+#         static_image_mode=True,
+#         max_num_faces=1,
+#         refine_landmarks=True
+#     )
+
+#     # Convert image for Mediapipe
+#     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+#     results = face_mesh.process(image_rgb)
+
+#     if not results.multi_face_landmarks:
+#         return image_bgr  # no face detected → return original
+
+#     for face_landmarks in results.multi_face_landmarks:
+#         overlay = image_bgr.copy()
+
+#         left_eye_upper = [33, 246, 161, 160, 159, 158, 157, 173, 133]
+#         right_eye_upper = [263, 466, 388, 387, 386, 385, 384, 398, 362]
+
+#         for eye_idxs, eye_side in [(left_eye_upper, "left"), (right_eye_upper, "right")]:
+#             pts = []
+#             for idx in eye_idxs:
+#                 lm = face_landmarks.landmark[idx]
+#                 pts.append((int(lm.x * w), int(lm.y * h)))
+#             pts = np.array(pts, dtype=np.int32)
+
+#             outer_corner_idx = 0
+#             inner_corner_idx = -1
+#             outer_corner = pts[outer_corner_idx]
+#             inner_corner = pts[inner_corner_idx]
+
+#             # Upper eyeliner stroke
+#             for i in range(len(pts) - 1):
+#                 progress = i / (len(pts) - 1)
+#                 if eye_side == "left":
+#                     thickness = int(2 + (1 - progress) * 4)
+#                 else:
+#                     thickness = int(2 + (1 - progress) * 4)
+#                 cv2.line(
+#                     overlay, tuple(pts[i]), tuple(pts[i + 1]),
+#                     eyeliner_color, int(thickness * intensity * 2), cv2.LINE_AA
+#                 )
+
+#             # Winged tip
+#             eye_vector = np.array(outer_corner) - np.array(inner_corner)
+#             eye_angle = np.arctan2(eye_vector[1], eye_vector[0])
+
+#             if eye_side == "left":
+#                 wing_angle = eye_angle - np.deg2rad(15)
+#             else:
+#                 wing_angle = eye_angle + np.deg2rad(15)
+
+#             eye_width = np.linalg.norm(eye_vector)
+#             wing_length = int(eye_width * 0.25)
+#             wing_tip = (
+#                 int(outer_corner[0] + wing_length * np.cos(wing_angle)),
+#                 int(outer_corner[1] + wing_length * np.sin(wing_angle))
+#             )
+
+#             connection_point = (
+#                 int(outer_corner[0] + 3 * np.cos(eye_angle)),
+#                 int(outer_corner[1] + 6 + 3 * np.sin(eye_angle))
+#             )
+
+#             wing_pts = np.array([outer_corner, wing_tip, connection_point], dtype=np.int32)
+#             cv2.fillPoly(overlay, [wing_pts], eyeliner_color)
+#             cv2.line(overlay, outer_corner, wing_tip, eyeliner_color, 3, cv2.LINE_AA)
+
+#         # Blend overlay
+#         image_bgr = cv2.addWeighted(overlay, 0.75, image_bgr, 1 - 0.75, 0)
+
+#     return image_bgr

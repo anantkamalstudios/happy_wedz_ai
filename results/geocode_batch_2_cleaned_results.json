@@ -1,0 +1,730 @@
+[
+  {
+    "id": 55675,
+    "businessName": "Sri Sai Mini Hall",
+    "city": "Samayapuram",
+    "lat": 10.92392,
+    "lon": 78.74348,
+    "status": "cached"
+  },
+  {
+    "id": 92493,
+    "businessName": "Varque",
+    "city": "Varque Sweet Boutique",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 28160,
+    "businessName": "Instyle Wedding Planners",
+    "city": "Gomti Nagar",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75106,
+    "businessName": "Aamintraa Salon",
+    "city": "Pune",
+    "lat": 18.51957,
+    "lon": 73.85535,
+    "status": "cached"
+  },
+  {
+    "id": 75108,
+    "businessName": "DK Studio",
+    "city": "Ashiyana",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75109,
+    "businessName": "Cine Blitz Digital Studio",
+    "city": "Gaurabagh",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75116,
+    "businessName": "Universal Studio",
+    "city": "Rajajipuram",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75118,
+    "businessName": "Prabha Renu Ladies Beauty Parlour",
+    "city": ") Pune",
+    "lat": 18.51957,
+    "lon": 73.85535,
+    "status": "cached"
+  },
+  {
+    "id": 75137,
+    "businessName": "Gurudas Photo Studio",
+    "city": "Goa",
+    "lat": 15.33333,
+    "lon": 74.08333,
+    "status": "cached"
+  },
+  {
+    "id": 55676,
+    "businessName": "Crown Estate",
+    "city": "Ganganahalli",
+    "lat": 12.72199,
+    "lon": 76.46665,
+    "status": "cached"
+  },
+  {
+    "id": 55678,
+    "businessName": "Bhaidas Hall",
+    "city": "Vile Par",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 55681,
+    "businessName": "Havmor Restaurant",
+    "city": "Soci",
+    "lat": 46.08972,
+    "lon": 13.64306,
+    "status": "cached"
+  },
+  {
+    "id": 55682,
+    "businessName": "The Hermitage Farms",
+    "city": "Punjab",
+    "lat": 30.85,
+    "lon": 72.31667,
+    "status": "cached"
+  },
+  {
+    "id": 75138,
+    "businessName": "Jeet Verma Photography",
+    "city": "Meerut and has been in this industry for many years",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75144,
+    "businessName": "Prajapati films",
+    "city": "Lucknow",
+    "lat": 26.83928,
+    "lon": 80.92313,
+    "status": "cached"
+  },
+  {
+    "id": 75152,
+    "businessName": "Ecstasy Events and Entertainment",
+    "city": "Sus Pune",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75167,
+    "businessName": "Hitendra Singh Photography",
+    "city": "Yojna",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75178,
+    "businessName": "Capture Moments",
+    "city": "Ahmedabad",
+    "lat": 23.02579,
+    "lon": 72.58727,
+    "status": "cached"
+  },
+  {
+    "id": 75255,
+    "businessName": "Lensation Capture Studio",
+    "city": "Kamla Nagar",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75267,
+    "businessName": "Jag'z Institute",
+    "city": "Surat is your one choice for all kinds of makeover needs",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75268,
+    "businessName": "Infinity Beauty Hair Salon And Academy",
+    "city": "Indore",
+    "lat": 22.71792,
+    "lon": 75.8333,
+    "status": "cached"
+  },
+  {
+    "id": 75274,
+    "businessName": "Shivam Caterers",
+    "city": "Jaipur",
+    "lat": 26.91962,
+    "lon": 75.78781,
+    "status": "cached"
+  },
+  {
+    "id": 75296,
+    "businessName": "Enhance Salon",
+    "city": "Ahemdabad",
+    "lat": 23.03819,
+    "lon": 72.51467,
+    "status": "cached"
+  },
+  {
+    "id": 75339,
+    "businessName": "JHabib Hair & Beauty",
+    "city": ") 4111046 Pune",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75344,
+    "businessName": "NP Photography",
+    "city": "Bhayli Vadodara",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75345,
+    "businessName": "Tarshvi Digital",
+    "city": "Manjalpur Vadodara",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75357,
+    "businessName": "Shubham Photography",
+    "city": "saahadat",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75384,
+    "businessName": "Mousumi Roy - Bridal Makeup",
+    "city": "Laxmipur Math",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75450,
+    "businessName": "Shilpa Beauty Parlour & Boutique",
+    "city": "Hubali-Dharwad",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75451,
+    "businessName": "Shital Beauty Parlour",
+    "city": "Surat and is willing to travel globally",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75472,
+    "businessName": "New Angels Bridal Studio & Family Spa",
+    "city": "Kerala is your one choice for all kinds of makeover needs",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75501,
+    "businessName": "Rashmi Beauty Salon",
+    "city": "Motavarachha Surat",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75514,
+    "businessName": "Thaai studio",
+    "city": "Tiruchirappalli is one of the most popular photography ventures specializing in wedding photography",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75516,
+    "businessName": "Eva Hair and Beauty Salon",
+    "city": "Jankipuram Extension",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 11600,
+    "businessName": "Kylee by Ruchi Jain",
+    "city": "Their manufacturing unit is on Mathura Road",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75526,
+    "businessName": "New Jersy Unisex Salon & Spa",
+    "city": "LDA Colony",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75528,
+    "businessName": "Sundar Photography",
+    "city": "Trichy is one of the most popular photography ventures specializing in wedding photography",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75537,
+    "businessName": "Glam Makeovers by Nandini Pandey",
+    "city": "Triveni Nagar",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75540,
+    "businessName": "Styles N Smiles Makeup Studio",
+    "city": "Styles N Smiles Makeup Studio",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75549,
+    "businessName": "Narayan Digital Studio",
+    "city": "Delhi",
+    "lat": 28.65195,
+    "lon": 77.23149,
+    "status": "cached"
+  },
+  {
+    "id": 75571,
+    "businessName": "Jawed Habib Hair and Beauty Unisex Salon",
+    "city": "Rajaji Puram",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75599,
+    "businessName": "Kar & Sarkars Event",
+    "city": "Amarpalli",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75636,
+    "businessName": "Akristik Studios",
+    "city": "Mumbai",
+    "lat": 19.07283,
+    "lon": 72.88261,
+    "status": "cached"
+  },
+  {
+    "id": 75664,
+    "businessName": "Ashish Kalra Photography",
+    "city": "Panchkula",
+    "lat": 30.69461,
+    "lon": 76.8504,
+    "status": "cached"
+  },
+  {
+    "id": 75682,
+    "businessName": "Apurba Beauty Parlour",
+    "city": "Kolkata",
+    "lat": 22.56263,
+    "lon": 88.36304,
+    "status": "cached"
+  },
+  {
+    "id": 75710,
+    "businessName": "Makeup Artist Akansha",
+    "city": "Sushant Golf City",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75736,
+    "businessName": "Pk Makeup Studio & Academy",
+    "city": "head to toe by using high-quality branded goods",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75746,
+    "businessName": "Jyoti's Beauty Salon Spa Academy",
+    "city": "Jyoti's Beauty Salon & Spa",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75748,
+    "businessName": "Pure Sin Chocolates",
+    "city": "They are based out of",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75788,
+    "businessName": "Devang Digital",
+    "city": "Surat and has been in this industry for many years",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75814,
+    "businessName": "‎Ashtik Waghela Makeup Artist",
+    "city": "Kholvad",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75817,
+    "businessName": "Video Man",
+    "city": "Surat",
+    "lat": 9.14011,
+    "lon": 99.33311,
+    "status": "cached"
+  },
+  {
+    "id": 75827,
+    "businessName": "Fair Beauty Parlour",
+    "city": "Avanavanchery",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75846,
+    "businessName": "NP Studio",
+    "city": "Gadhiya Char Rasta",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75854,
+    "businessName": "Nandini Rangoli Beauty Care, Celebrity Bridal Makeup Artist",
+    "city": "Pavukkonam",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75866,
+    "businessName": "Beauty Bride",
+    "city": "Valummel Kochi",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75874,
+    "businessName": "Devoos Beauty Parlour",
+    "city": "Chittappuram Pattithara",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75893,
+    "businessName": "Evergreen Beauty Parlour",
+    "city": "Vadakkencherry",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75912,
+    "businessName": "Jana Digital Studio",
+    "city": "Kollam",
+    "lat": 8.88113,
+    "lon": 76.58469,
+    "status": "cached"
+  },
+  {
+    "id": 75953,
+    "businessName": "Future Fotography",
+    "city": "Mathigiri",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75966,
+    "businessName": "Manju photography",
+    "city": "Begapalli",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 75970,
+    "businessName": "Bhakti Imaginations",
+    "city": "Ugat",
+    "lat": 40.2,
+    "lon": 67.25,
+    "status": "cached"
+  },
+  {
+    "id": 75989,
+    "businessName": "Red Rose Beauty Parlour",
+    "city": "Kunnumpuram",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76022,
+    "businessName": "Vivah Clicks",
+    "city": "Jivraj Park Ahmedabad",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76045,
+    "businessName": "Escanor Event Organizers",
+    "city": "Bangalore",
+    "lat": 12.97194,
+    "lon": 77.59369,
+    "status": "cached"
+  },
+  {
+    "id": 76092,
+    "businessName": "Pratibimb Digital Photo",
+    "city": "Ghoti Budruk",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76119,
+    "businessName": "Hitesh Photography",
+    "city": "Ghooghra",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76129,
+    "businessName": "Faces Unisex Salon",
+    "city": "Telibagh",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76163,
+    "businessName": "Frameography Official",
+    "city": "Nirala Nagar",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76168,
+    "businessName": "Ravikiran Photography",
+    "city": "Wedding Photography",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76170,
+    "businessName": "First Foundation Pro",
+    "city": "Hyderabad",
+    "lat": 17.38405,
+    "lon": 78.45636,
+    "status": "cached"
+  },
+  {
+    "id": 76186,
+    "businessName": "Events by Saniya",
+    "city": "Areas Covered by Events by Saniya",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76207,
+    "businessName": "The Crown Production",
+    "city": "Trikuta Nagar",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76216,
+    "businessName": "Mystical Brush by Poonam",
+    "city": "Malviya Nagar",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76240,
+    "businessName": "Hennacraze by Nadine Paul",
+    "city": "Malaysia",
+    "lat": 2.5,
+    "lon": 112.5,
+    "status": "cached"
+  },
+  {
+    "id": 76281,
+    "businessName": "Fotovision Studio",
+    "city": "Mukherjee Nagar",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 3440,
+    "businessName": "Tirupati NX",
+    "city": "Tirupati Nx",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76308,
+    "businessName": "Photozadda Films Photography",
+    "city": "Gaur City 1",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76310,
+    "businessName": "Kumar Studio",
+    "city": "Kulesara",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76327,
+    "businessName": "Jenny Photography",
+    "city": "Daman",
+    "lat": 20.41431,
+    "lon": 72.83236,
+    "status": "cached"
+  },
+  {
+    "id": 76331,
+    "businessName": "Weddings by Siddhant Kapoor",
+    "city": "quiet glances to grand celebrations",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76335,
+    "businessName": "Lokesh Kashyap Photography",
+    "city": "Uttam Nagar",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76343,
+    "businessName": "Rahul Malik Photography",
+    "city": "Delhi NCR is the man behind the lens and his main aim is to earn your happiness by capturing your special moments for you to cherish forever",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 55683,
+    "businessName": "Lavish Garden",
+    "city": "D",
+    "lat": 4.60971,
+    "lon": -74.08175,
+    "status": "cached"
+  },
+  {
+    "id": 76366,
+    "businessName": "HR Films and Photography",
+    "city": "Gokul appartments",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76372,
+    "businessName": "Mehendi Corner",
+    "city": "Arakkunnam",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76442,
+    "businessName": "Nataraj Beauty Care",
+    "city": "behind otur S",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76457,
+    "businessName": "Pratul Dumbre Photography",
+    "city": "PRATUL DUMBRE PHOTOGRAPHY",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76515,
+    "businessName": "Priya Ghadge Makeup Artist",
+    "city": "s.p.traders",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 76553,
+    "businessName": "New Looks Family Salon",
+    "city": "Vrindavan Colony",
+    "lat": null,
+    "lon": null,
+    "status": "not_found"
+  },
+  {
+    "id": 55684,
+    "businessName": "KVL Kalyana Mahal",
+    "city": "Chenn",
+    "lat": 10.68109,
+    "lon": 103.90155,
+    "status": "cached"
+  }
+]
